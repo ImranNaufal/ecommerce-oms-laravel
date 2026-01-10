@@ -41,14 +41,35 @@ A comprehensive, production-ready e-commerce platform featuring an advanced Orde
 
 ## 📸 Screenshots
 
-### Dashboard
-Interactive sales analytics with real-time statistics and zoom-enabled charts for deep-diving into data.
+### 🖥️ Dashboard & Analytics
+Interactive sales analytics with real-time statistics and zoom-enabled charts.
+![Dashboard](screenshots/01-dashboard.png)
 
-### Product Management
-A modern grid layout for products, featuring auto-SKU generation, profit margin badges, and full CRUD operations.
+### 📦 Product Management
+Modern grid layout for products with profit margin badges and SKU generation.
+![Product List](screenshots/02-products-list.png)
+![Add Product Modal](screenshots/03-add-product-modal.png)
 
-### Commission Tracking
-Automated commission calculation engine with a managerial approval workflow and affiliate leaderboards.
+### 🧾 Order & Customer Management
+Full order lifecycle tracking and comprehensive customer history.
+![Order List](screenshots/04-orders-list.png)
+![Order Detail](screenshots/05-order-detail.png)
+![Customer Management](screenshots/06-customers.png)
+
+### 💰 Commissions & Integrations
+Automated commission tracking and multi-channel marketplace integration.
+![Commission Tracking](screenshots/07-commissions.png)
+![Marketplace Integrations](screenshots/08-integrations.png)
+
+### 🔍 Search & Notifications
+Global real-time search and database-triggered notification system.
+![Global Search](screenshots/11-search-results.png)
+![Notifications](screenshots/10-notifications.png)
+
+### 🛠️ System Administration
+Detailed activity logs for system monitoring and troubleshooting.
+![System Logs](screenshots/12-system-logs.png)
+![Login Page](screenshots/00-login.png)
 
 ## 🚀 Quick Start Guide
 
