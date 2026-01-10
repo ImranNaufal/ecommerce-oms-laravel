@@ -4,13 +4,36 @@ const path = require('path');
 test.describe('Visual Documentation Screenshots', () => {
   const screenshotDir = 'screenshots';
 
+  // Helper to make screenshots look better
+  const takeCleanScreenshot = async (page, name, fullPage = false) => {
+    // Hide scrollbar and ensure high quality
+    await page.addStyleTag({
+      content: `
+        ::-webkit-scrollbar { display: none !important; }
+        * { scrollbar-width: none !important; }
+      `
+    });
+    await page.waitForTimeout(1000); // Wait for animations to settle
+    await page.screenshot({ 
+      path: path.join(screenshotDir, name), 
+      fullPage,
+      animations: 'disabled'
+    });
+  };
+
   test('Capture Login Page', async ({ page }) => {
+    await page.setViewportSize({ width: 1600, height: 1000 });
     await page.goto('/login');
     await page.waitForSelector('button[type="submit"]');
-    await page.screenshot({ path: path.join(screenshotDir, '00-login.png') });
+    await takeCleanScreenshot(page, '00-login.png');
   });
 
   test.describe('Authenticated Screens', () => {
+    test.use({ 
+      viewport: { width: 1600, height: 1000 },
+      deviceScaleFactor: 2 // High resolution/Retina
+    });
+
     test.beforeEach(async ({ page }) => {
       await page.goto('/login');
       await page.fill('input[type="email"]', 'admin@ecommerce.com');
@@ -22,64 +45,51 @@ test.describe('Visual Documentation Screenshots', () => {
     test('Capture Dashboard', async ({ page }) => {
       await page.goto('/');
       await page.waitForSelector('text=Overview');
-      await page.waitForTimeout(2000);
-      await page.screenshot({ path: path.join(screenshotDir, '01-dashboard.png'), fullPage: true });
+      await page.waitForTimeout(2000); // Wait for charts
+      await takeCleanScreenshot(page, '01-dashboard.png', true);
     });
 
     test('Capture Products Page and Add Product Modal', async ({ page }) => {
       await page.click('text=Products');
       await page.waitForURL('/products');
-      await page.screenshot({ path: path.join(screenshotDir, '02-products-list.png'), fullPage: true });
+      await takeCleanScreenshot(page, '02-products-list.png', true);
 
       await page.click('text=Tambah Item');
       await page.waitForSelector('text=Tambah Produk');
-      await page.screenshot({ path: path.join(screenshotDir, '03-add-product-modal.png') });
+      await page.waitForTimeout(500);
+      await takeCleanScreenshot(page, '03-add-product-modal.png');
       await page.keyboard.press('Escape');
     });
 
     test('Capture Orders Page and Order Detail', async ({ page }) => {
       await page.click('text=Order Management');
       await page.waitForURL('/orders');
-      await page.screenshot({ path: path.join(screenshotDir, '04-orders-list.png'), fullPage: true });
+      await takeCleanScreenshot(page, '04-orders-list.png', true);
 
       const detailButton = page.locator('text=Detail').first();
       if (await detailButton.isVisible()) {
         await detailButton.click();
         await page.waitForSelector('text=Order #');
-        await page.screenshot({ path: path.join(screenshotDir, '05-order-detail.png'), fullPage: true });
+        await takeCleanScreenshot(page, '05-order-detail.png', true);
       }
     });
 
     test('Capture Customers Page', async ({ page }) => {
       await page.click('text=Customers');
       await page.waitForURL('/customers');
-      await page.screenshot({ path: path.join(screenshotDir, '06-customers.png'), fullPage: true });
+      await takeCleanScreenshot(page, '06-customers.png', true);
     });
 
     test('Capture Commissions Page', async ({ page }) => {
       await page.click('text=Commissions');
       await page.waitForURL('/commissions');
-      await page.screenshot({ path: path.join(screenshotDir, '07-commissions.png'), fullPage: true });
+      await takeCleanScreenshot(page, '07-commissions.png', true);
     });
 
     test('Capture Integrations Page', async ({ page }) => {
       await page.click('text=Integrations');
       await page.waitForURL('/channels');
-      await page.screenshot({ path: path.join(screenshotDir, '08-integrations.png'), fullPage: true });
-    });
-
-    test('Capture Cart / Troli', async ({ page }) => {
-      await page.goto('/products');
-      // Click a plus button to add an item
-      const addButtons = page.locator('button:has(svg)').filter({ has: page.locator('svg') });
-      await addButtons.first().click();
-      await page.waitForTimeout(1000);
-      
-      // Click Troli button 
-      const troliButton = page.locator('button').filter({ hasText: 'Troli' });
-      await troliButton.click({ force: true });
-      await page.waitForTimeout(2000);
-      await page.screenshot({ path: path.join(screenshotDir, '09-cart.png') });
+      await takeCleanScreenshot(page, '08-integrations.png', true);
     });
 
     test('Capture Notifications and Search UI', async ({ page }) => {
@@ -88,19 +98,19 @@ test.describe('Visual Documentation Screenshots', () => {
       const bellButton = page.locator('#notification-bell');
       await bellButton.click();
       await page.waitForTimeout(1000);
-      await page.screenshot({ path: path.join(screenshotDir, '10-notifications.png') });
+      await takeCleanScreenshot(page, '10-notifications.png');
       await page.click('body'); 
 
       const searchInput = page.locator('input[placeholder*="Search orders"]');
       await searchInput.fill('elec');
       await page.waitForTimeout(1500);
-      await page.screenshot({ path: path.join(screenshotDir, '11-search-results.png') });
+      await takeCleanScreenshot(page, '11-search-results.png');
     });
 
     test('Capture System Logs', async ({ page }) => {
       await page.click('text=System Logs');
       await page.waitForURL('/logs');
-      await page.screenshot({ path: path.join(screenshotDir, '12-system-logs.png'), fullPage: true });
+      await takeCleanScreenshot(page, '12-system-logs.png', true);
     });
   });
 });
