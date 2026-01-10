@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import api from '../api';
 import { format } from 'date-fns';
 import { 
   ExclamationTriangleIcon, 
@@ -12,7 +12,7 @@ export default function ApiLogs() {
   const [filter, setFilter] = useState('all');
 
   const { data: logs, isLoading, refetch } = useQuery('api-logs', async () => {
-    const res = await axios.get('/api/channels/logs/all');
+    const res = await api.get('/channels/logs/all');
     return res.data.data;
   });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../api';
 import {
   HomeIcon,
   ShoppingBagIcon,
@@ -41,7 +41,7 @@ export default function Layout() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await axios.get('/api/notifications?limit=5');
+        const res = await api.get('/notifications?limit=5');
         setUnreadCount(res.data.data.unread_count);
         setNotifications(res.data.data.notifications);
       } catch (err) {}
@@ -57,7 +57,7 @@ export default function Layout() {
       if (searchQuery.length >= 2) {
         setIsSearching(true);
         try {
-          const res = await axios.get(`/api/search?q=${searchQuery}`);
+          const res = await api.get(`/search?q=${searchQuery}`);
           setSearchResults(res.data.data);
         } catch (err) {} finally {
           setIsSearching(false);
@@ -75,7 +75,7 @@ export default function Layout() {
   // Mark all notifications as read
   const markAllRead = async () => {
     try {
-      await axios.patch('/api/notifications/read-all');
+      await api.patch('/notifications/read-all');
       setUnreadCount(0);
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch (err) {

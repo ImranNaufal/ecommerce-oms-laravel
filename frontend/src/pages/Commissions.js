@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import api from '../api';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -13,17 +13,17 @@ export default function Commissions() {
   const { user } = useAuth();
 
   const { data: summary } = useQuery('commission-summary', async () => {
-    const res = await axios.get('/api/commissions/summary');
+    const res = await api.get('/commissions/summary');
     return res.data.data;
   });
 
   const { data: transactions } = useQuery('commission-transactions', async () => {
-    const res = await axios.get('/api/commissions/transactions?limit=20');
+    const res = await api.get('/commissions/transactions?limit=20');
     return res.data;
   });
 
   const { data: leaderboard } = useQuery('commission-leaderboard', async () => {
-    const res = await axios.get('/api/commissions/leaderboard?period=month');
+    const res = await api.get('/commissions/leaderboard?period=month');
     return res.data.data;
   });
 

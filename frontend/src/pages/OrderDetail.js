@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import axios from 'axios';
+import api from '../api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { 
@@ -18,14 +18,14 @@ export default function OrderDetail() {
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('');
 
   const { data: order, isLoading } = useQuery(['order', id], async () => {
-    const res = await axios.get(`/api/orders/${id}`);
+    const res = await api.get(`/orders/${id}`);
     return res.data.data;
   });
 
   const updateStatusMutation = useMutation(async ({ status, type }) => {
-    const endpoint = type === 'order' ? `/api/orders/${id}/status` : `/api/orders/${id}/payment`;
+    const endpoint = type === 'order' ? `/orders/${id}/status` : `/orders/${id}/payment`;
     const payload = type === 'order' ? { status } : { payment_status: status };
-    await axios.patch(endpoint, payload);
+    await api.patch(endpoint, payload);
   }, {
     onSuccess: () => {
       queryClient.invalidateQueries(['order', id]);

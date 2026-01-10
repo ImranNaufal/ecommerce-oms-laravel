@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import {
   ShoppingCartIcon,
@@ -19,22 +19,22 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   const { data: stats, isLoading: statsLoading } = useQuery('dashboard-stats', async () => {
-    const res = await axios.get('/api/dashboard/stats');
+    const res = await api.get('/dashboard/stats');
     return res.data.data;
   });
 
   const { data: salesChart } = useQuery('sales-chart', async () => {
-    const res = await axios.get('/api/dashboard/sales-chart');
+    const res = await api.get('/dashboard/sales-chart');
     return res.data.data;
   }, { enabled: user?.role === 'admin' });
 
   const { data: activities } = useQuery('activities', async () => {
-    const res = await axios.get('/api/dashboard/activities?limit=5');
+    const res = await api.get('/dashboard/activities?limit=5');
     return res.data.data;
   });
 
   const { data: alertData } = useQuery('system-alerts', async () => {
-    const res = await axios.get('/api/alerts');
+    const res = await api.get('/alerts');
     return res.data.data;
   });
 

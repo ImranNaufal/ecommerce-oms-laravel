@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import axios from 'axios';
+import api from '../api';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
 import { 
@@ -28,21 +28,21 @@ export default function Products() {
   });
 
   const { data, isLoading } = useQuery(['products', search, page], async () => {
-    const res = await axios.get(`/api/products?search=${search}&page=${page}&limit=20`);
+    const res = await api.get(`/products?search=${search}&page=${page}&limit=20`);
     return res.data;
   });
 
   const { data: categories } = useQuery('categories', async () => {
-    const res = await axios.get('/api/products/categories/all');
+    const res = await api.get('/products/categories/all');
     return res.data.data;
   });
 
   // Create/Update Product
   const saveProductMutation = useMutation(async (data) => {
     if (editingProduct) {
-      return await axios.put(`/api/products/${editingProduct.id}`, data);
+      return await api.put(`/products/${editingProduct.id}`, data);
     }
-    return await axios.post('/api/products', data);
+    return await api.post('/products', data);
   }, {
     onSuccess: (response) => {
       if (response.data.sku) {
@@ -59,7 +59,7 @@ export default function Products() {
 
   // Delete Product
   const deleteProductMutation = useMutation(async (id) => {
-    return await axios.delete(`/api/products/${id}`);
+    return await api.delete(`/products/${id}`);
   }, {
     onSuccess: () => {
       toast.success('Produk dipadam!');
@@ -70,7 +70,7 @@ export default function Products() {
 
   // Checkout - OPTIMIZED untuk response pantas
   const checkoutMutation = useMutation(async (orderData) => {
-    const res = await axios.post('/api/orders', orderData, { timeout: 5000 });
+    const res = await api.post('/orders', orderData, { timeout: 5000 });
     return res.data;
   }, {
     onSuccess: (data) => {

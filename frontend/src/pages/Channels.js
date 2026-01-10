@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import axios from 'axios';
+import api from '../api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { 
@@ -14,12 +14,12 @@ import {
 export default function Channels() {
   const queryClient = useQueryClient();
   const { data: channels } = useQuery('channels', async () => {
-    const res = await axios.get('/api/channels');
+    const res = await api.get('/channels');
     return res.data.data;
   });
 
   const syncMutation = useMutation(async (channelId) => {
-    return await axios.post(`/api/channels/${channelId}/sync`);
+    return await api.post(`/channels/${channelId}/sync`);
   }, {
     onSuccess: (_, channelId) => {
       toast.success(`Channel #${channelId} berjaya disinkronis!`);

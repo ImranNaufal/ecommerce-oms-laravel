@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { format } from 'date-fns';
 import { 
   ArrowDownTrayIcon
@@ -13,7 +13,7 @@ export default function Orders() {
   const { data, isLoading } = useQuery(['orders', filters], async () => {
     const params = new URLSearchParams(filters);
     params.append('limit', '20');
-    const res = await axios.get(`/api/orders?${params.toString()}`);
+    const res = await api.get(`/orders?${params.toString()}`);
     return res.data;
   });
 

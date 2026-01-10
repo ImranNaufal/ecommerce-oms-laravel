@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import axios from 'axios';
+import api from '../api';
 import toast from 'react-hot-toast';
 import { 
   PlusIcon, 
@@ -19,12 +19,12 @@ export default function Customers() {
   });
 
   const { data, isLoading } = useQuery(['customers', search, page], async () => {
-    const res = await axios.get(`/api/customers?search=${search}&page=${page}&limit=20`);
+    const res = await api.get(`/customers?search=${search}&page=${page}&limit=20`);
     return res.data;
   });
 
   const addCustomerMutation = useMutation(async (data) => {
-    return await axios.post('/api/customers', data);
+    return await api.post('/customers', data);
   }, {
     onSuccess: () => {
       toast.success('Pelanggan berjaya didaftar!');
