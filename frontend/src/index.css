@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f8fafc] text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-soft rounded-2xl;
+  }
+  
+  .premium-card {
+    @apply bg-white border border-slate-100 shadow-soft rounded-2xl transition-all duration-300 hover:shadow-premium hover:-translate-y-1;
+  }
+
+  .nav-link {
+    @apply flex items-center px-4 py-3 text-base font-medium rounded-xl transition-all duration-200;
+  }
+
+  .nav-link-active {
+    @apply bg-brand-600 text-white shadow-lg shadow-brand-200;
+  }
+
+  .nav-link-inactive {
+    @apply text-slate-600 hover:bg-slate-50 hover:text-brand-600;
+  }
+
+  .btn-modern {
+    @apply px-5 py-2.5 rounded-xl font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  .btn-modern-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-100 hover:shadow-brand-200;
+  }
+
+  .status-badge {
+    @apply px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider;
+  }
+  
+  .input-modern {
+    @apply w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all outline-none text-base;
+  }
+}
+
+/* Custom transitions for page changes */
+.page-transition {
+  @apply animate-fade-in;
+}
+
+/* Custom Table Styles */
+.table-container {
+  @apply overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-soft;
+}
+
+.modern-table {
+  @apply min-w-full divide-y divide-slate-100;
+}
+
+.modern-table th {
+  @apply px-6 py-4 bg-slate-50/50 text-left text-xs font-bold text-slate-500 uppercase tracking-widest;
+}
+
+.modern-table td {
+  @apply px-6 py-4 text-base text-slate-700;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
