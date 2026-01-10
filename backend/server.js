@@ -32,6 +32,10 @@ const alertRoutes = require('./routes/alerts');
 
 const app = express();
 
+// Enable trust proxy for Render/Cloud providers
+// This is required for express-rate-limit to work correctly
+app.set('trust proxy', 1);
+
 // =====================================================
 // MIDDLEWARE
 // =====================================================
