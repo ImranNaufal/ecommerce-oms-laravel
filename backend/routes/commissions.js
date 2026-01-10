@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Get commission summary for current user (Admin sees ALL)
 router.get('/summary', auth, async (req, res) => {
-  try {
+  try { 
     const userId = req.user.id;
     const isAdmin = req.user.role === 'admin';
 
@@ -39,7 +39,7 @@ router.get('/summary', auth, async (req, res) => {
       data: {
         summary,
         monthly,
-        config: configs[0] || null
+        config: config
       }
     });
   } catch (error) {

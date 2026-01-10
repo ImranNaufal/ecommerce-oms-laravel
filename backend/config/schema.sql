@@ -1,4 +1,4 @@
--- E-commerce OMS Database Schema
+ -- E-commerce OMS Database Schema
 -- Optimized for commission calculations, order processing, and sales reporting
 
 -- Drop existing database and create fresh

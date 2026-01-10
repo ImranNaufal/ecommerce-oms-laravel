@@ -57,8 +57,8 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Selamat Datang, <span className="text-brand-600">{user?.full_name?.split(' ')[0]}</span></h1>
-          <p className="text-slate-500 font-medium">Berikut adalah prestasi operasi setakat hari ini.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Welcome, <span className="text-brand-600">{user?.full_name?.split(' ')[0]}</span></h1>
+          <p className="text-slate-500 font-medium">Here's your operational performance as of today.</p>
         </div>
       </div>
 
@@ -128,14 +128,14 @@ export default function Dashboard() {
                       <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(d) => format(new Date(d), 'dd MMM')} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} 
-                    minTickGap={30}
-                  />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(d) => format(new Date(d), 'dd MMM')} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#94a3b8', fontSize: 13, fontWeight: 600}} 
+                      minTickGap={30}
+                    />
                   <YAxis hide={true} domain={[0, 'dataMax + 1000']} />
                   <Tooltip 
                     contentStyle={{ 
@@ -145,9 +145,9 @@ export default function Dashboard() {
                       padding: '16px'
                     }}
                     itemStyle={{ fontSize: '16px', fontWeight: 'bold', color: '#0ea5e9' }}
-                    labelStyle={{ fontSize: '12px', color: '#64748b', marginBottom: '6px' }}
+                    labelStyle={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}
                     labelFormatter={(d) => format(new Date(d), 'dd MMM yyyy')}
-                    formatter={(val) => [`RM ${parseFloat(val).toLocaleString()}`, 'Jualan']}
+                    formatter={(val) => [`RM ${parseFloat(val).toLocaleString()}`, 'Sales']}
                     cursor={{ stroke: '#0ea5e9', strokeWidth: 2, strokeDasharray: '5 5' }}
                   />
                   <Area 
@@ -165,8 +165,8 @@ export default function Dashboard() {
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-slate-400">
                 <ChartBarIcon className="h-16 w-16 text-slate-200 mb-3" />
-                <p className="text-sm font-medium">Tiada data jualan dalam 30 hari terakhir</p>
-                <p className="text-xs mt-1">Data akan muncul selepas order pertama dibuat</p>
+                <p className="text-sm font-medium">No sales data in the last 30 days</p>
+                <p className="text-xs mt-1">Data will appear after the first order is created</p>
               </div>
             )}
           </div>

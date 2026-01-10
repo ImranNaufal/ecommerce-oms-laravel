@@ -26,11 +26,11 @@ router.get('/', auth, async (req, res) => {
         alerts.push({
           id: 'low_stock',
           type: 'warning',
-          title: `${lowStock[0].count} Produk Stok Rendah`,
-          message: `Produk berikut perlu ditambah stok: ${lowStock[0].products}`,
+          title: `${lowStock[0].count} Low Stock Products`,
+          message: `The following products need restocking: ${lowStock[0].products}`,
           priority: 'medium',
           action_url: '/products',
-          action_label: 'Lihat Produk'
+          action_label: 'View Products'
         });
       }
     }
@@ -45,11 +45,11 @@ router.get('/', auth, async (req, res) => {
         alerts.push({
           id: 'out_stock',
           type: 'danger',
-          title: `${outStock[0].count} Produk Stok Habis`,
-          message: 'Terdapat produk yang perlu diisi semula dengan segera',
+          title: `${outStock[0].count} Out of Stock Products`,
+          message: 'There are products that need immediate restocking',
           priority: 'high',
           action_url: '/products',
-          action_label: 'Urus Stok'
+          action_label: 'Manage Stock'
         });
       }
     }
@@ -68,11 +68,11 @@ router.get('/', auth, async (req, res) => {
       alerts.push({
         id: 'pending_orders',
         type: 'info',
-        title: `${pendingOrders[0].count} Pesanan Menunggu`,
-        message: 'Terdapat pesanan yang perlu diproses',
+        title: `${pendingOrders[0].count} Pending Orders`,
+        message: 'There are orders waiting to be processed',
         priority: 'medium',
         action_url: '/orders?status=pending',
-        action_label: 'Lihat Pesanan'
+        action_label: 'View Orders'
       });
     }
 
@@ -90,11 +90,11 @@ router.get('/', auth, async (req, res) => {
         alerts.push({
           id: 'pending_commissions',
           type: 'warning',
-          title: `${pendingCommissions[0].count} Komisen Menunggu Kelulusan`,
-          message: `Jumlah: RM ${parseFloat(pendingCommissions[0].total_amount).toFixed(2)}`,
+          title: `${pendingCommissions[0].count} Commissions Pending Approval`,
+          message: `Total amount: RM ${parseFloat(pendingCommissions[0].total_amount).toFixed(2)}`,
           priority: 'medium',
           action_url: '/commissions',
-          action_label: 'Semak Komisen'
+          action_label: 'Review Commissions'
         });
       }
     }
@@ -113,11 +113,11 @@ router.get('/', auth, async (req, res) => {
       alerts.push({
         id: 'unpaid_orders',
         type: 'warning',
-        title: `${unpaidOrders[0].count} Pesanan Belum Bayar`,
-        message: 'Pesanan lebih 24 jam tanpa pembayaran',
+        title: `${unpaidOrders[0].count} Unpaid Orders`,
+        message: 'Orders over 24 hours without payment',
         priority: 'high',
         action_url: '/orders?payment_status=pending',
-        action_label: 'Tindakan Diperlukan'
+        action_label: 'Take Action'
       });
     }
 

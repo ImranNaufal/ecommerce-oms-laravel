@@ -133,12 +133,23 @@ router.post('/order/external', verifyWebhookSignature, async (req, res) => {
 
     await connection.commit();
 
-    res.json({
+    const successResponse = {
       success: true,
       message: 'Order injected successfully',
       orderId,
       orderNumber
-    });
+    };
+
+    // Update log dengan response payload
+    await pool.query(
+      `UPDATE api_logs 
+       SET response_payload = ? 
+       WHERE endpoint = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+       ORDER BY created_at DESC LIMIT 1`,
+      [JSON.stringify(successResponse), '/webhook/order/external']
+    );
+
+    res.json(successResponse);
 
   } catch (error) {
     await connection.rollback();

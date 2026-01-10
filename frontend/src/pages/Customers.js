@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../api';
 import toast from 'react-hot-toast';
+import { validators } from '../utils/validators';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
-  XMarkIcon
+  XMarkIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 
 export default function Customers() {
   const [search, setSearch] = useState('');
   const [page] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -34,6 +37,33 @@ export default function Customers() {
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Gagal mendaftar pelanggan')
   });
+
+  const handleSubmitCustomer = (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    const errors = {};
+    
+    const nameError = validators.required(formData.full_name, 'Full name');
+    if (nameError) errors.full_name = nameError;
+    
+    const emailError = validators.email(formData.email);
+    if (emailError) errors.email = emailError;
+    
+    const phoneError = validators.phone(formData.phone);
+    if (phoneError) errors.phone = phoneError;
+    
+    const addressError = validators.required(formData.address, 'Address');
+    if (addressError) errors.address = addressError;
+    
+    setFormErrors(errors);
+    
+    if (Object.keys(errors).length === 0) {
+      addCustomerMutation.mutate(formData);
+    } else {
+      toast.error('Please fix validation errors');
+    }
+  };
 
   return (
     <div className="space-y-10 page-transition">
@@ -98,28 +128,85 @@ export default function Customers() {
               <h2 className="text-xl font-black italic tracking-tighter uppercase">Daftar Pelanggan</h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-white/10 rounded-xl"><XMarkIcon className="h-5 w-5" /></button>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); addCustomerMutation.mutate(formData); }} className="p-6 space-y-4">
+            <form onSubmit={handleSubmitCustomer} className="p-6 space-y-4">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Nama Penuh</label>
-                  <input type="text" className="input-modern" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} required />
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Full Name</label>
+                  <input 
+                    type="text" 
+                    className={`input-modern ${formErrors.full_name ? 'border-red-500 bg-red-50' : ''}`}
+                    value={formData.full_name} 
+                    onChange={e => {
+                      setFormData({...formData, full_name: e.target.value});
+                      setFormErrors({...formErrors, full_name: null});
+                    }}
+                  />
+                  {formErrors.full_name && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.full_name}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Emel</label>
-                    <input type="email" className="input-modern" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
+                    <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Email</label>
+                    <input 
+                      type="email" 
+                      className={`input-modern ${formErrors.email ? 'border-red-500 bg-red-50' : ''}`}
+                      value={formData.email} 
+                      onChange={e => {
+                        setFormData({...formData, email: e.target.value});
+                        setFormErrors({...formErrors, email: null});
+                      }}
+                    />
+                    {formErrors.email && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.email}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <label className="text-sm font-black text-slate-400 uppercase mb-1 block">No. Telefon</label>
-                    <input type="text" className="input-modern" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required />
+                    <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Phone Number</label>
+                    <input 
+                      type="text" 
+                      className={`input-modern ${formErrors.phone ? 'border-red-500 bg-red-50' : ''}`}
+                      value={formData.phone} 
+                      onChange={e => {
+                        setFormData({...formData, phone: e.target.value});
+                        setFormErrors({...formErrors, phone: null});
+                      }}
+                    />
+                    {formErrors.phone && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.phone}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Alamat Penghantaran</label>
-                  <textarea className="input-modern h-20 resize-none" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required></textarea>
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Shipping Address</label>
+                  <textarea 
+                    className={`input-modern h-20 resize-none ${formErrors.address ? 'border-red-500 bg-red-50' : ''}`}
+                    value={formData.address} 
+                    onChange={e => {
+                      setFormData({...formData, address: e.target.value});
+                      setFormErrors({...formErrors, address: null});
+                    }}
+                  ></textarea>
+                  {formErrors.address && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.address}
+                    </p>
+                  )}
                 </div>
               </div>
-              <button type="submit" disabled={addCustomerMutation.isLoading} className="w-full btn-modern btn-modern-primary py-4 uppercase text-sm font-black tracking-[0.2em]">Register Customer</button>
+              <button 
+                type="submit" 
+                disabled={addCustomerMutation.isLoading}
+                className="w-full btn-modern btn-modern-primary py-4 uppercase text-sm font-black tracking-[0.2em]"
+              >
+                {addCustomerMutation.isLoading ? 'Saving...' : 'Register Customer'}
+              </button>
             </form>
           </div>
         </div>

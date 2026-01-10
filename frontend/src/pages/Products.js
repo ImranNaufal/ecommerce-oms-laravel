@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../api';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
+import { validators } from '../utils/validators';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -11,7 +12,8 @@ import {
   XMarkIcon,
   PencilSquareIcon,
   TrashIcon,
-  PhotoIcon
+  PhotoIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 
 export default function Products() {
@@ -19,6 +21,7 @@ export default function Products() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
   const { addToCart, cart, clearCart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, subtotal } = useCart();
   const queryClient = useQueryClient();
 
@@ -107,7 +110,48 @@ export default function Products() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    saveProductMutation.mutate(formData);
+    
+    // Validate form before submit
+    const errors = {};
+    
+    // Validate product name
+    const nameError = validators.required(formData.name, 'Product name');
+    if (nameError) errors.name = nameError;
+    
+    // Validate price
+    const priceError = validators.price(formData.price, 'Selling price');
+    if (priceError) errors.price = priceError;
+    
+    // Validate stock
+    const stockError = validators.number(formData.stock_quantity, 'Stock quantity', 0);
+    if (stockError) errors.stock_quantity = stockError;
+    
+    // Validate cost price (optional but must be valid number if provided)
+    if (formData.cost_price && validators.number(formData.cost_price, 'Cost price', 0)) {
+      errors.cost_price = validators.number(formData.cost_price, 'Cost price', 0);
+    }
+    
+    // Validate image URL (optional but must be valid if provided)
+    if (formData.image_url) {
+      const urlError = validators.url(formData.image_url);
+      if (urlError) errors.image_url = urlError;
+    }
+    
+    // Check if price is higher than cost (business logic)
+    if (formData.price && formData.cost_price) {
+      if (parseFloat(formData.cost_price) >= parseFloat(formData.price)) {
+        errors.cost_price = 'Cost price must be lower than selling price';
+      }
+    }
+    
+    setFormErrors(errors);
+    
+    // Only submit if no errors
+    if (Object.keys(errors).length === 0) {
+      saveProductMutation.mutate(formData);
+    } else {
+      toast.error('Please fix validation errors before saving');
+    }
   };
 
   const handleCheckout = () => {
@@ -255,13 +299,41 @@ export default function Products() {
                 <label className="text-sm font-black text-slate-400 uppercase mb-1 block flex items-center gap-2">
                   <PhotoIcon className="h-3 w-3" /> Image URL (Unsplash/CDN)
                 </label>
-                <input type="url" className="input-modern text-sm" placeholder="https://images.unsplash.com/photo-xxx?w=500" value={formData.image_url} onChange={e => setFormData({...formData, image_url: e.target.value})} />
-                <p className="text-xs text-slate-400 mt-1">Contoh: https://images.unsplash.com/photo-xxx?w=500</p>
+                <input 
+                  type="url" 
+                  className={`input-modern text-sm ${formErrors.image_url ? 'border-red-500 bg-red-50' : ''}`}
+                  placeholder="https://images.unsplash.com/photo-xxx?w=500" 
+                  value={formData.image_url} 
+                  onChange={e => {
+                    setFormData({...formData, image_url: e.target.value});
+                    setFormErrors({...formErrors, image_url: null});
+                  }}
+                />
+                {formErrors.image_url ? (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.image_url}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 mt-1">Example: https://images.unsplash.com/photo-xxx?w=500</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Nama Produk</label>
-                  <input type="text" className="input-modern" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Product Name</label>
+                  <input 
+                    type="text" 
+                    className={`input-modern ${formErrors.name ? 'border-red-500 bg-red-50' : ''}`}
+                    value={formData.name} 
+                    onChange={e => {
+                      setFormData({...formData, name: e.target.value});
+                      setFormErrors({...formErrors, name: null});
+                    }} 
+                  />
+                  {formErrors.name && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.name}
+                    </p>
+                  )}
                 </div>
                 {editingProduct && (
                   <div className="col-span-2">
@@ -275,27 +347,74 @@ export default function Products() {
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Kategori</label>
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Category</label>
                   <select className="input-modern" value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>
                     {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
-                  <p className="text-xs text-slate-400 mt-1">Electronics → ELEC-001, Fashion → FASH-001</p>
+                  <p className="text-xs text-slate-400 mt-1">Auto-generates SKU (e.g., ELEC-001)</p>
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Harga Jual (RM)</label>
-                  <input type="number" step="0.01" className="input-modern" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Selling Price (RM)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className={`input-modern ${formErrors.price ? 'border-red-500 bg-red-50' : ''}`}
+                    value={formData.price} 
+                    onChange={e => {
+                      setFormData({...formData, price: e.target.value});
+                      setFormErrors({...formErrors, price: null});
+                    }}
+                  />
+                  {formErrors.price && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.price}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Kos (RM)</label>
-                  <input type="number" step="0.01" className="input-modern" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} />
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Cost Price (RM)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className={`input-modern ${formErrors.cost_price ? 'border-red-500 bg-red-50' : ''}`}
+                    value={formData.cost_price} 
+                    onChange={e => {
+                      setFormData({...formData, cost_price: e.target.value});
+                      setFormErrors({...formErrors, cost_price: null});
+                    }}
+                  />
+                  {formErrors.cost_price && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.cost_price}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Kuantiti Stok</label>
-                  <input type="number" className="input-modern" value={formData.stock_quantity} onChange={e => setFormData({...formData, stock_quantity: e.target.value})} required />
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Stock Quantity</label>
+                  <input 
+                    type="number" 
+                    className={`input-modern ${formErrors.stock_quantity ? 'border-red-500 bg-red-50' : ''}`}
+                    value={formData.stock_quantity} 
+                    onChange={e => {
+                      setFormData({...formData, stock_quantity: e.target.value});
+                      setFormErrors({...formErrors, stock_quantity: null});
+                    }}
+                  />
+                  {formErrors.stock_quantity && (
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                      <ExclamationCircleIcon className="h-3 w-3" /> {formErrors.stock_quantity}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Alert Stok Rendah</label>
-                  <input type="number" className="input-modern" value={formData.low_stock_threshold} onChange={e => setFormData({...formData, low_stock_threshold: e.target.value})} />
+                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Low Stock Alert</label>
+                  <input 
+                    type="number" 
+                    className="input-modern" 
+                    value={formData.low_stock_threshold} 
+                    onChange={e => setFormData({...formData, low_stock_threshold: e.target.value})} 
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Alert when stock falls below this number</p>
                 </div>
               </div>
               <button type="submit" disabled={saveProductMutation.isLoading} className="w-full btn-modern btn-modern-primary py-4 mt-4 uppercase text-sm font-black tracking-[0.2em]">

@@ -15,7 +15,6 @@ export default function OrderDetail() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState('');
 
   const { data: order, isLoading } = useQuery(['order', id], async () => {
     const res = await api.get(`/orders/${id}`);
@@ -31,7 +30,6 @@ export default function OrderDetail() {
       queryClient.invalidateQueries(['order', id]);
       toast.success('Status dikemaskini!');
       setSelectedStatus('');
-      setSelectedPaymentStatus('');
     }
   });
 

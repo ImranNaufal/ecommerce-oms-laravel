@@ -187,18 +187,27 @@ router.post('/:id/sync', [
       [id]
     );
 
-    // Log the sync attempt
-    await pool.query(
-      `INSERT INTO api_logs (channel_id, endpoint, method, success, created_at)
-       VALUES (?, ?, 'GET', TRUE, NOW())`,
-      [id, channel.api_endpoint || 'manual_sync']
-    );
-
-    res.json({
+    // Log the sync attempt dengan full details
+    const syncResponse = {
       success: true,
       message: 'Channel sync initiated successfully',
-      note: 'In production, this would trigger actual API synchronization'
-    });
+      note: 'In production, this would trigger actual API synchronization',
+      channel: channel.name,
+      synced_at: new Date().toISOString()
+    };
+
+    await pool.query(
+      `INSERT INTO api_logs (channel_id, endpoint, method, request_payload, response_payload, success, created_at)
+       VALUES (?, ?, 'GET', ?, ?, TRUE, NOW())`,
+      [
+        id, 
+        channel.api_endpoint || 'manual_sync',
+        JSON.stringify({ action: 'manual_sync', channel_id: id }),
+        JSON.stringify(syncResponse)
+      ]
+    );
+
+    res.json(syncResponse);
   } catch (error) {
     console.error('Sync channel error:', error);
     res.status(500).json({

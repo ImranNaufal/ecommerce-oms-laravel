@@ -25,10 +25,10 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Sample notifications for demo
 INSERT INTO notifications (user_id, title, message, type, related_type) VALUES
-(1, 'Selamat Datang ke OMS', 'Sistem Order Management anda sudah bersedia!', 'success', 'system'),
-(NULL, 'Update Sistem', 'Versi baru dengan dashboard yang dipertingkatkan telah dilaksanakan', 'info', 'system');
+(1, 'Welcome to OMS', 'Your Order Management System is ready!', 'success', 'system'),
+(NULL, 'System Update', 'A new version with an enhanced dashboard has been deployed', 'info', 'system');
 
--- Create trigger untuk auto-notify low stock
+-- Create trigger for auto-notify low stock
 DELIMITER //
 
 CREATE TRIGGER notify_low_stock
@@ -42,8 +42,8 @@ BEGIN
         INSERT INTO notifications (user_id, title, message, type, related_type, related_id)
         SELECT 
             id,
-            'Stok Rendah',
-            CONCAT('Produk "', NEW.name, '" (SKU: ', NEW.sku, ') stok tinggal ', NEW.stock_quantity, ' unit'),
+            'Low Stock Warning',
+            CONCAT('Product "', NEW.name, '" (SKU: ', NEW.sku, ') has only ', NEW.stock_quantity, ' units left'),
             'warning',
             'product',
             NEW.id
@@ -54,7 +54,7 @@ END//
 
 DELIMITER ;
 
--- Create trigger untuk notify new order
+-- Create trigger for notify new order
 DELIMITER //
 
 CREATE TRIGGER notify_new_order
@@ -65,8 +65,8 @@ BEGIN
     INSERT INTO notifications (user_id, title, message, type, related_type, related_id)
     SELECT 
         id,
-        'Pesanan Baru',
-        CONCAT('Pesanan #', NEW.order_number, ' (RM ', NEW.total, ') telah diterima'),
+        'New Order Received',
+        CONCAT('Order #', NEW.order_number, ' (RM ', NEW.total, ') has been received'),
         'info',
         'order',
         NEW.id
@@ -78,8 +78,8 @@ BEGIN
         INSERT INTO notifications (user_id, title, message, type, related_type, related_id)
         VALUES (
             NEW.assigned_staff_id,
-            'Pesanan Ditugaskan',
-            CONCAT('Pesanan #', NEW.order_number, ' telah ditugaskan kepada anda'),
+            'Order Assigned',
+            CONCAT('Order #', NEW.order_number, ' has been assigned to you'),
             'info',
             'order',
             NEW.id

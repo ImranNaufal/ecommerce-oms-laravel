@@ -37,19 +37,31 @@ export default function Layout() {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Fetch Notifications
+  // Fetch Notifications (Real-time polling every 5 seconds)
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const res = await api.get('/notifications?limit=5');
-        setUnreadCount(res.data.data.unread_count);
+        const newUnreadCount = res.data.data.unread_count;
+        
+        // Trigger animation jika ada notification baru
+        if (newUnreadCount > unreadCount) {
+          // Shake animation untuk bell icon
+          document.getElementById('notification-bell')?.classList.add('animate-bounce');
+          setTimeout(() => {
+            document.getElementById('notification-bell')?.classList.remove('animate-bounce');
+          }, 1000);
+        }
+        
+        setUnreadCount(newUnreadCount);
         setNotifications(res.data.data.notifications);
       } catch (err) {}
     };
+    
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(fetchNotifications, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [unreadCount]);
 
   // Handle Search
   useEffect(() => {
@@ -99,7 +111,7 @@ export default function Layout() {
           
           <nav className="flex-1 px-4 py-4 space-y-2">
             <div className="px-4 mb-2">
-              <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Menu Utama</p>
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Main Menu</p>
             </div>
             {filteredNavigation.map((item) => (
               <Link key={item.name} to={item.href} className={`nav-link ${isActive(item.href) ? 'nav-link-active' : 'nav-link-inactive'}`}>
@@ -121,7 +133,7 @@ export default function Layout() {
             </div>
             <button onClick={logout} className="w-full py-3 flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:text-danger hover:bg-red-50 rounded-xl transition-all">
               <ArrowRightOnRectangleIcon className="h-5 w-5" />
-              Daftar Keluar
+              Sign Out
             </button>
           </div>
         </div>
@@ -134,7 +146,7 @@ export default function Layout() {
               <MagnifyingGlassIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${isSearching ? 'text-brand-500 animate-pulse' : 'text-slate-400'}`} />
               <input 
                 type="text" 
-                placeholder="Cari order, produk..." 
+                placeholder="Search orders, products..." 
                 className="w-full bg-slate-50 border-none rounded-xl pl-10 pr-4 py-2.5 text-base focus:ring-2 focus:ring-brand-500/20 transition-all outline-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -144,7 +156,7 @@ export default function Layout() {
                   <div className="p-4 max-h-96 overflow-y-auto">
                     {searchResults.products.length > 0 && (
                       <div className="mb-4">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Produk</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Products</p>
                         {searchResults.products.map(p => (
                           <div key={p.id} onClick={() => {navigate('/products'); setSearchQuery('')}} className="p-2 hover:bg-slate-50 rounded-lg cursor-pointer flex justify-between items-center">
                             <span className="text-base font-bold text-slate-700">{p.name}</span>
@@ -155,7 +167,7 @@ export default function Layout() {
                     )}
                     {searchResults.orders.length > 0 && (
                       <div>
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Pesanan</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Orders</p>
                         {searchResults.orders.map(o => (
                           <div key={o.id} onClick={() => {navigate(`/orders/${o.id}`); setSearchQuery('')}} className="p-2 hover:bg-slate-50 rounded-lg cursor-pointer flex justify-between items-center">
                             <span className="text-base font-bold text-slate-700">#{o.order_number}</span>
@@ -173,6 +185,7 @@ export default function Layout() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <button 
+                id="notification-bell"
                 onClick={() => {
                   setShowNotifications(!showNotifications);
                   if (!showNotifications && unreadCount > 0) {
@@ -182,12 +195,12 @@ export default function Layout() {
                 className="p-2.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all relative"
               >
                 <BellIcon className="h-6 w-6" />
-                {unreadCount > 0 && <span className="absolute top-2 right-2 h-4 w-4 bg-danger text-white text-[10px] flex items-center justify-center font-bold rounded-full border-2 border-white">{unreadCount}</span>}
+                {unreadCount > 0 && <span className="absolute top-2 right-2 h-4 w-4 bg-danger text-white text-[10px] flex items-center justify-center font-bold rounded-full border-2 border-white animate-pulse">{unreadCount}</span>}
               </button>
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-premium border border-slate-100 overflow-hidden animate-slide-up">
                   <div className="p-4 border-b border-slate-50 flex justify-between items-center">
-                    <span className="text-base font-black text-slate-900">Notifikasi</span>
+                    <span className="text-base font-black text-slate-900">Notifications</span>
                     <button onClick={() => setShowNotifications(false)} className="text-slate-400"><XMarkIcon className="h-5 w-5" /></button>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
@@ -205,7 +218,7 @@ export default function Layout() {
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-slate-900">{user?.full_name}</p>
-                <p className="text-xs text-slate-500 font-medium">Sesi Aktif</p>
+                <p className="text-xs text-slate-500 font-medium">Active Session</p>
               </div>
               <div className="h-11 w-11 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-100 font-black text-lg">{user?.full_name?.charAt(0)}</div>
             </div>
