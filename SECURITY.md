@@ -222,9 +222,9 @@ GET /api/products?search=' OR 1=1--
 
 ---
 
-## 🎓 Untuk Interview
+## 🎓
 
-Bila interviewer tanya **"How do you handle security?"**, jawab:
+**"How do you handle security?"**
 
 > **"Saya implement 10-layer security defense:
 > 1. Rate limiting untuk prevent brute force dan DDoS
