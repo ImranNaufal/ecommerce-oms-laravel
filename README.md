@@ -35,32 +35,6 @@ This project follows a modern decoupled architecture:
 - **Order Audit Trail:** Tracks all changes to an order for compliance.
 - **API Activity Logging:** Monitors all incoming webhook requests for easy troubleshooting.
 
-## 📸 Screenshots
-
-### 🖥️ Dashboard & Analytics
-Interactive sales analytics with real-time statistics and zoom-enabled charts.
-![Dashboard](screenshots/01-dashboard.png)
-
-### 📦 Product Management
-Modern grid layout for products with profit margin badges and SKU generation.
-![Product List](screenshots/02-products-list.png)
-![Add Product Modal](screenshots/03-add-product-modal.png)
-
-### 🧾 Order & Customer Management
-Full order lifecycle tracking and comprehensive customer history.
-![Order List](screenshots/04-orders-list.png)
-![Order Detail](screenshots/05-order-detail.png)
-
-### 💰 Commissions & Integrations
-Automated commission tracking and multi-channel marketplace integration.
-![Commission Tracking](screenshots/07-commissions.png)
-![Marketplace Integrations](screenshots/08-integrations.png)
-
-### 🔍 Search & Notifications
-Global real-time search and database-triggered notification system.
-![Global Search](screenshots/11-search-results.png)
-![Notifications](screenshots/10-notifications.png)
-
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
