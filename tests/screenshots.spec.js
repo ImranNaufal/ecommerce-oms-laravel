@@ -75,12 +75,14 @@ test.describe('Visual Documentation Screenshots', () => {
       await page.waitForURL('/orders');
       await takeCleanScreenshot(page, '04-orders-list.png');
 
-      const detailButton = page.locator('text=Detail').first();
-      if (await detailButton.isVisible()) {
-        await detailButton.click();
-        await page.waitForSelector('text=Order #');
-        await takeCleanScreenshot(page, '05-order-detail.png');
-      }
+      // Ensure at least one order exists and click detail
+      const detailButton = page.locator('button:has-text("Detail"), a:has-text("Detail")').first();
+      await detailButton.waitFor({ state: 'visible', timeout: 10000 });
+      await detailButton.click();
+      
+      await page.waitForSelector('text=Order #', { timeout: 10000 });
+      await page.waitForTimeout(1000); // Wait for animations/data
+      await takeCleanScreenshot(page, '05-order-detail.png');
     });
 
     test('Capture Customers Page', async ({ page }) => {
