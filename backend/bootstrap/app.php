@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
-        $middleware->throttleApi('throttle:60,1');
+        $middleware->throttleApi('api');
         
         // Register custom middleware aliases
         $middleware->alias([

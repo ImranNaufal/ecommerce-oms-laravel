@@ -3,26 +3,35 @@ const path = require('path');
 
 test.describe('Visual Documentation Screenshots', () => {
   const screenshotDir = 'screenshots';
+  test.setTimeout(180000); // 3 minutes total for all screenshots
 
   // Helper to make screenshots look better
   const takeCleanScreenshot = async (page, name) => {
-    // Hide scrollbar and ensure high quality
+    // Wait for network to settle (faster than fixed timeout)
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 5000 });
+    } catch (e) {}
+    
+    // Hide scrollbar
     await page.addStyleTag({
       content: `
         ::-webkit-scrollbar { display: none !important; }
         * { scrollbar-width: none !important; }
       `
     });
-    await page.waitForTimeout(1000); // Wait for animations to settle
+    
+    // Minimal wait for animations
+    await page.waitForTimeout(1000); 
+    
     await page.screenshot({ 
       path: path.join(screenshotDir, name), 
-      fullPage: false, // Changed to false for better framing
+      fullPage: false,
       animations: 'disabled'
     });
   };
 
   test('Capture Login Page', async ({ page }) => {
-    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/login');
     await page.waitForSelector('button[type="submit"]');
     await takeCleanScreenshot(page, '00-login.png');
@@ -30,7 +39,7 @@ test.describe('Visual Documentation Screenshots', () => {
 
   test.describe('Authenticated Screens', () => {
     test.use({ 
-      viewport: { width: 1600, height: 900 },
+      viewport: { width: 1280, height: 800 },
       deviceScaleFactor: 2 // High resolution/Retina
     });
 

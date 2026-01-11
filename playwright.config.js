@@ -27,7 +27,7 @@ module.exports = defineConfig({
   ],
 
   webServer: {
-    // command: 'npm run dev',
+    command: 'cross-env PORT=5000 npm run dev',
     url: 'http://localhost:5000',
     reuseExistingServer: true,
     timeout: 120000,
