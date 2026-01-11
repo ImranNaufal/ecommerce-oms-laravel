@@ -27,7 +27,7 @@ export default function Products() {
 
   const [formData, setFormData] = useState({
     name: '', price: '', cost_price: '', stock_quantity: '', category_id: 1, 
-    low_stock_threshold: 5, description: '', image_url: ''
+    low_stock_threshold: 5, description: '', image_url: '', status: 'active'
   });
 
   const { data, isLoading } = useQuery(['products', search, page], async () => {
@@ -61,14 +61,36 @@ export default function Products() {
   });
 
   // Delete Product
-  const deleteProductMutation = useMutation(async (id) => {
-    return await api.delete(`/products/${id}`);
+  const deleteProductMutation = useMutation(async ({ id, force = false }) => {
+    return await api.delete(`/products/${id}${force ? '?force=true' : ''}`);
   }, {
     onSuccess: () => {
       toast.success('Produk dipadam!');
       queryClient.invalidateQueries('products');
     },
-    onError: (err) => toast.error('Gagal memadam produk')
+    onError: (err) => {
+      const message = err.response?.data?.message;
+      const id = err.config?.url?.split('/').pop();
+      
+      if (message && message.includes('existing orders')) {
+        if (window.confirm('Product has existing orders. Do you want to FORCE DELETE it? This will also remove the product from all its previous order records.')) {
+          deleteProductMutation.mutate({ id, force: true });
+        }
+      } else {
+        toast.error(message || 'Gagal memadam produk');
+      }
+    }
+  });
+
+  // Quick Archive Function
+  const archiveProductMutation = useMutation(async (product) => {
+    return await api.put(`/products/${product.id}`, { ...product, status: 'inactive' });
+  }, {
+    onSuccess: () => {
+      toast.success('Produk telah diarkibkan');
+      queryClient.invalidateQueries('products');
+    },
+    onError: (err) => toast.error('Gagal mengarkibkan produk')
   });
 
   // Checkout - OPTIMIZED untuk response pantas
@@ -98,7 +120,7 @@ export default function Products() {
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setFormData({ name: '', price: '', cost_price: '', stock_quantity: '', category_id: 1, low_stock_threshold: 5, description: '', image_url: '' });
+    setFormData({ name: '', price: '', cost_price: '', stock_quantity: '', category_id: 1, low_stock_threshold: 5, description: '', image_url: '', status: 'active' });
     setIsModalOpen(true);
   };
 
@@ -227,10 +249,21 @@ export default function Products() {
                   </span>
                 </div>
                 <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all flex gap-2 z-10">
-                  <button onClick={() => openEditModal(product)} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-brand-600 hover:bg-brand-600 hover:text-white transition-all">
+                  <button onClick={() => openEditModal(product)} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-brand-600 hover:bg-brand-600 hover:text-white transition-all" title="Edit Product">
                     <PencilSquareIcon className="h-4 w-4" />
                   </button>
-                  <button onClick={() => {if(window.confirm('Padam produk ini?')) deleteProductMutation.mutate(product.id)}} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-red-600 hover:bg-red-600 hover:text-white transition-all">
+                  <button 
+                    onClick={() => {
+                      if(window.confirm('Archive this product? It will be hidden from the catalog.')) {
+                        archiveProductMutation.mutate(product);
+                      }
+                    }} 
+                    className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-amber-600 hover:bg-amber-600 hover:text-white transition-all"
+                    title="Archive Product"
+                  >
+                    <ArchiveBoxIcon className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => {if(window.confirm('Padam produk ini?')) deleteProductMutation.mutate({ id: product.id })}} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-red-600 hover:bg-red-600 hover:text-white transition-all" title="Delete Product">
                     <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
@@ -252,7 +285,7 @@ export default function Products() {
                       <p className="text-xs text-slate-400 font-bold">Cost: RM{parseFloat(product.cost_price).toFixed(2)}</p>
                     )}
                   </div>
-                  <button onClick={() => addToCart(product)} disabled={product.stock_quantity === 0} className="h-9 w-9 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-brand-600 transition-all disabled:opacity-20">
+                  <button onClick={() => addToCart(product)} disabled={product.stock_quantity === 0} aria-label="Add to Cart" className="h-9 w-9 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-brand-600 transition-all disabled:opacity-20">
                     <PlusIcon className="h-4 w-4" />
                   </button>
                 </div>
@@ -296,10 +329,11 @@ export default function Products() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-black text-slate-400 uppercase mb-1 block flex items-center gap-2">
+                <label htmlFor="image_url" className="text-sm font-black text-slate-400 uppercase mb-1 block flex items-center gap-2">
                   <PhotoIcon className="h-3 w-3" /> Image URL (Unsplash/CDN)
                 </label>
                 <input 
+                  id="image_url"
                   type="url" 
                   className={`input-modern text-sm ${formErrors.image_url ? 'border-red-500 bg-red-50' : ''}`}
                   placeholder="https://images.unsplash.com/photo-xxx?w=500" 
@@ -319,8 +353,9 @@ export default function Products() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Product Name</label>
+                  <label htmlFor="product_name" className="text-sm font-black text-slate-400 uppercase mb-1 block">Product Name</label>
                   <input 
+                    id="product_name"
                     type="text" 
                     className={`input-modern ${formErrors.name ? 'border-red-500 bg-red-50' : ''}`}
                     value={formData.name} 
@@ -347,15 +382,16 @@ export default function Products() {
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Category</label>
-                  <select className="input-modern" value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>
+                  <label htmlFor="category_id" className="text-sm font-black text-slate-400 uppercase mb-1 block">Category</label>
+                  <select id="category_id" className="input-modern" value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>
                     {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                   <p className="text-xs text-slate-400 mt-1">Auto-generates SKU (e.g., ELEC-001)</p>
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Selling Price (RM)</label>
+                  <label htmlFor="price" className="text-sm font-black text-slate-400 uppercase mb-1 block">Selling Price (RM)</label>
                   <input 
+                    id="price"
                     type="number" 
                     step="0.01" 
                     className={`input-modern ${formErrors.price ? 'border-red-500 bg-red-50' : ''}`}
@@ -372,8 +408,9 @@ export default function Products() {
                   )}
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Cost Price (RM)</label>
+                  <label htmlFor="cost_price" className="text-sm font-black text-slate-400 uppercase mb-1 block">Cost Price (RM)</label>
                   <input 
+                    id="cost_price"
                     type="number" 
                     step="0.01" 
                     className={`input-modern ${formErrors.cost_price ? 'border-red-500 bg-red-50' : ''}`}
@@ -390,8 +427,9 @@ export default function Products() {
                   )}
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Stock Quantity</label>
+                  <label htmlFor="stock_quantity" className="text-sm font-black text-slate-400 uppercase mb-1 block">Stock Quantity</label>
                   <input 
+                    id="stock_quantity"
                     type="number" 
                     className={`input-modern ${formErrors.stock_quantity ? 'border-red-500 bg-red-50' : ''}`}
                     value={formData.stock_quantity} 
@@ -407,14 +445,29 @@ export default function Products() {
                   )}
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Low Stock Alert</label>
+                  <label htmlFor="low_stock_threshold" className="text-sm font-black text-slate-400 uppercase mb-1 block">Low Stock Alert</label>
                   <input 
+                    id="low_stock_threshold"
                     type="number" 
                     className="input-modern" 
                     value={formData.low_stock_threshold} 
                     onChange={e => setFormData({...formData, low_stock_threshold: e.target.value})} 
                   />
                   <p className="text-xs text-slate-400 mt-1">Alert when stock falls below this number</p>
+                </div>
+                <div>
+                  <label htmlFor="status" className="text-sm font-black text-slate-400 uppercase mb-1 block">Product Status</label>
+                  <select 
+                    id="status" 
+                    className="input-modern" 
+                    value={formData.status} 
+                    onChange={e => setFormData({...formData, status: e.target.value})}
+                  >
+                    <option value="active">Active (Visible)</option>
+                    <option value="inactive">Archived (Hidden)</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">Use 'Archived' if the product has orders and cannot be deleted.</p>
                 </div>
               </div>
               <button type="submit" disabled={saveProductMutation.isLoading} className="w-full btn-modern btn-modern-primary py-4 mt-4 uppercase text-sm font-black tracking-[0.2em]">

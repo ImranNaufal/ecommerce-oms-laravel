@@ -209,6 +209,7 @@ export default function Channels() {
                 <button 
                   onClick={() => syncMutation.mutate(channel.id)}
                   disabled={syncMutation.isLoading}
+                  aria-label={`Sync ${channel.name}`}
                   className="flex-1 btn-modern bg-slate-900 text-white text-sm uppercase font-black tracking-widest hover:bg-brand-600 transition-all"
                 >
                   <ArrowPathIcon className={`h-3 w-3 ${syncMutation.isLoading ? 'animate-spin' : ''}`} /> Sync Now

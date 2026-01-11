@@ -20,8 +20,8 @@ test.describe('Authentication System', () => {
     await expect(page).toHaveURL('/');
     await expect(page.locator('text=Overview')).toBeVisible();
     
-    // Dashboard should show stats
-    await expect(page.locator('text=Jumlah Pesanan')).toBeVisible();
+    // Dashboard should show stats (English UI)
+    await expect(page.locator('text=Total Orders')).toBeVisible();
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
@@ -34,7 +34,8 @@ test.describe('Authentication System', () => {
   });
 
   test('should display demo credentials correctly', async ({ page }) => {
-    await expect(page.locator('text=Admin')).toBeVisible();
-    await expect(page.locator('text=admin@ecommerce.com')).toBeVisible();
+    // Check for demo credentials table/section
+    await expect(page.locator('text=admin@ecommerce.com').first()).toBeVisible();
+    await expect(page.locator('text=admin123').first()).toBeVisible();
   });
 });

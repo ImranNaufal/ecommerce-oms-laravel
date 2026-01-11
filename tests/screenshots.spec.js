@@ -5,7 +5,7 @@ test.describe('Visual Documentation Screenshots', () => {
   const screenshotDir = 'screenshots';
 
   // Helper to make screenshots look better
-  const takeCleanScreenshot = async (page, name, fullPage = false) => {
+  const takeCleanScreenshot = async (page, name) => {
     // Hide scrollbar and ensure high quality
     await page.addStyleTag({
       content: `
@@ -16,13 +16,13 @@ test.describe('Visual Documentation Screenshots', () => {
     await page.waitForTimeout(1000); // Wait for animations to settle
     await page.screenshot({ 
       path: path.join(screenshotDir, name), 
-      fullPage,
+      fullPage: false, // Changed to false for better framing
       animations: 'disabled'
     });
   };
 
   test('Capture Login Page', async ({ page }) => {
-    await page.setViewportSize({ width: 1600, height: 1000 });
+    await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/login');
     await page.waitForSelector('button[type="submit"]');
     await takeCleanScreenshot(page, '00-login.png');
@@ -30,7 +30,7 @@ test.describe('Visual Documentation Screenshots', () => {
 
   test.describe('Authenticated Screens', () => {
     test.use({ 
-      viewport: { width: 1600, height: 1000 },
+      viewport: { width: 1600, height: 900 },
       deviceScaleFactor: 2 // High resolution/Retina
     });
 
@@ -46,13 +46,13 @@ test.describe('Visual Documentation Screenshots', () => {
       await page.goto('/');
       await page.waitForSelector('text=Overview');
       await page.waitForTimeout(2000); // Wait for charts
-      await takeCleanScreenshot(page, '01-dashboard.png', true);
+      await takeCleanScreenshot(page, '01-dashboard.png');
     });
 
     test('Capture Products Page and Add Product Modal', async ({ page }) => {
       await page.click('text=Products');
       await page.waitForURL('/products');
-      await takeCleanScreenshot(page, '02-products-list.png', true);
+      await takeCleanScreenshot(page, '02-products-list.png');
 
       await page.click('text=Tambah Item');
       await page.waitForSelector('text=Tambah Produk');
@@ -64,32 +64,32 @@ test.describe('Visual Documentation Screenshots', () => {
     test('Capture Orders Page and Order Detail', async ({ page }) => {
       await page.click('text=Order Management');
       await page.waitForURL('/orders');
-      await takeCleanScreenshot(page, '04-orders-list.png', true);
+      await takeCleanScreenshot(page, '04-orders-list.png');
 
       const detailButton = page.locator('text=Detail').first();
       if (await detailButton.isVisible()) {
         await detailButton.click();
         await page.waitForSelector('text=Order #');
-        await takeCleanScreenshot(page, '05-order-detail.png', true);
+        await takeCleanScreenshot(page, '05-order-detail.png');
       }
     });
 
     test('Capture Customers Page', async ({ page }) => {
       await page.click('text=Customers');
       await page.waitForURL('/customers');
-      await takeCleanScreenshot(page, '06-customers.png', true);
+      await takeCleanScreenshot(page, '06-customers.png');
     });
 
     test('Capture Commissions Page', async ({ page }) => {
       await page.click('text=Commissions');
       await page.waitForURL('/commissions');
-      await takeCleanScreenshot(page, '07-commissions.png', true);
+      await takeCleanScreenshot(page, '07-commissions.png');
     });
 
     test('Capture Integrations Page', async ({ page }) => {
       await page.click('text=Integrations');
       await page.waitForURL('/channels');
-      await takeCleanScreenshot(page, '08-integrations.png', true);
+      await takeCleanScreenshot(page, '08-integrations.png');
     });
 
     test('Capture Notifications and Search UI', async ({ page }) => {
@@ -110,7 +110,7 @@ test.describe('Visual Documentation Screenshots', () => {
     test('Capture System Logs', async ({ page }) => {
       await page.click('text=System Logs');
       await page.waitForURL('/logs');
-      await takeCleanScreenshot(page, '12-system-logs.png', true);
+      await takeCleanScreenshot(page, '12-system-logs.png');
     });
   });
 });

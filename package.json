@@ -1,12 +1,10 @@
 {
   "name": "fullstack-ecommerce-oms",
   "version": "1.0.0",
-  "description": "Full Stack E-commerce Platform with Order Management System, Commission Tracking, and Multi-channel Integration",
-  "main": "backend/server.js",
+  "description": "Full Stack E-commerce Platform with Laravel Backend and React Frontend",
   "scripts": {
-    "start": "node backend/server.js",
-    "server": "nodemon backend/server.js",
-    "client": "npm start --prefix frontend",
+    "server": "cd backend && php artisan serve --port=8000",
+    "client": "cross-env BROWSER=none npm start --prefix frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "npm run build --prefix frontend",
     "install-all": "npm install && cd frontend && npm install",
@@ -20,29 +18,15 @@
     "oms",
     "commission",
     "api",
+    "laravel",
+    "react",
     "fullstack"
   ],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "axios": "^1.6.2",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-rate-limit": "^8.2.1",
-    "express-validator": "^7.0.1",
-    "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "morgan": "^1.10.0",
-    "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.6.5",
-    "node-cron": "^3.0.3"
-  },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "concurrently": "^8.2.2",
-    "cross-env": "^10.1.0",
-    "nodemon": "^3.0.2"
+    "cross-env": "^7.0.3"
   }
 }

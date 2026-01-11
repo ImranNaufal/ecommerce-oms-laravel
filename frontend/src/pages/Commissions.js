@@ -45,6 +45,7 @@ export default function Commissions() {
       toast.success('Komisen diluluskan!');
       queryClient.invalidateQueries('commission-transactions');
       queryClient.invalidateQueries('commission-summary');
+      queryClient.invalidateQueries('commission-leaderboard');
       queryClient.invalidateQueries('dashboard-stats');
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Gagal meluluskan')
@@ -58,6 +59,7 @@ export default function Commissions() {
       toast.success('Komisen ditanda sebagai DIBAYAR!');
       queryClient.invalidateQueries('commission-transactions');
       queryClient.invalidateQueries('commission-summary');
+      queryClient.invalidateQueries('commission-leaderboard');
       queryClient.invalidateQueries('dashboard-stats');
     },
     onError: (err) => toast.error(err.response?.data?.message || 'Gagal mengemaskini bayaran')

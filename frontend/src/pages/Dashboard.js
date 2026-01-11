@@ -21,22 +21,30 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery('dashboard-stats', async () => {
     const res = await api.get('/dashboard/stats');
     return res.data.data;
-  });
+  }, { refetchInterval: 5000 });
 
   const { data: salesChart } = useQuery('sales-chart', async () => {
     const res = await api.get('/dashboard/sales-chart');
     return res.data.data;
-  }, { enabled: user?.role === 'admin' });
+  }, { enabled: user?.role === 'admin', refetchInterval: 30000 }); // Chart refetch slightly slower
 
   const { data: activities } = useQuery('activities', async () => {
     const res = await api.get('/dashboard/activities?limit=5');
     return res.data.data;
-  });
+  }, { refetchInterval: 5000 });
 
   const { data: alertData } = useQuery('system-alerts', async () => {
-    const res = await api.get('/alerts');
-    return res.data.data;
-  });
+    const res = await api.get('/notifications?limit=2');
+    return {
+      alerts: res.data.data.notifications.map(n => ({
+        type: n.type === 'info' ? 'info' : (n.type === 'success' ? 'success' : (n.type === 'warning' ? 'warning' : 'danger')),
+        title: n.title,
+        message: n.message,
+        action_label: 'View Detail',
+        action_url: '/logs'
+      }))
+    };
+  }, { refetchInterval: 5000 });
 
   if (statsLoading) {
     return <div className="flex items-center justify-center h-[60vh]"><div className="spinner"></div></div>;

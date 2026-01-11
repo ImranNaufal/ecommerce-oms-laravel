@@ -11,8 +11,8 @@ import axios from 'axios';
 
 // The base URL for all API requests.
 // Using a constant ensures consistency and makes it easy to update if the API endpoint changes.
-// It defaults to the production URL but can be overridden for local development.
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api'; 
+// Laravel Backend: Port 8000 | Node.js Backend: Port 5000
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'; 
 
 /**
  * The configured Axios instance.

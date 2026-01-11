@@ -5,7 +5,7 @@ Complete API reference for the E-commerce Order Management System.
 ## Base URL
 
 ```
-http://localhost:5000/api
+http://localhost:8000/api
 ```
 
 ## Authentication

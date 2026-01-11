@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
+import { format } from 'date-fns';
 import {
   HomeIcon,
   ShoppingBagIcon,
@@ -41,27 +42,33 @@ export default function Layout() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await api.get('/notifications?limit=5');
-        const newUnreadCount = res.data.data.unread_count;
+        const res = await api.get('/notifications?limit=10');
+        const data = res.data.data;
+        const newUnreadCount = data.unread_count;
         
-        // Trigger animation jika ada notification baru
-        if (newUnreadCount > unreadCount) {
-          // Shake animation untuk bell icon
-          document.getElementById('notification-bell')?.classList.add('animate-bounce');
-          setTimeout(() => {
-            document.getElementById('notification-bell')?.classList.remove('animate-bounce');
-          }, 1000);
-        }
+        // Trigger animation jika ada notification baru (compare dengan state sebelumnya)
+        setUnreadCount(prev => {
+          if (newUnreadCount > prev) {
+            // Shake animation untuk bell icon
+            const bell = document.getElementById('notification-bell');
+            if (bell) {
+              bell.classList.add('animate-bounce');
+              setTimeout(() => bell.classList.remove('animate-bounce'), 2000);
+            }
+          }
+          return newUnreadCount;
+        });
         
-        setUnreadCount(newUnreadCount);
-        setNotifications(res.data.data.notifications);
-      } catch (err) {}
+        setNotifications(data.notifications || []);
+      } catch (err) {
+        console.error('Notification poll error:', err);
+      }
     };
     
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 5000); // Poll every 5 seconds
     return () => clearInterval(interval);
-  }, [unreadCount]);
+  }, []); 
 
   // Handle Search
   useEffect(() => {
@@ -90,8 +97,11 @@ export default function Layout() {
       await api.patch('/notifications/read-all');
       setUnreadCount(0);
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      // Refresh to ensure sync with server state
+      const res = await api.get('/notifications?limit=10');
+      setNotifications(res.data.data.notifications);
     } catch (err) {
-      console.error('Failed to mark notifications as read');
+      console.error('Failed to mark notifications as read:', err);
     }
   };
 
@@ -204,12 +214,32 @@ export default function Layout() {
                     <button onClick={() => setShowNotifications(false)} className="text-slate-400"><XMarkIcon className="h-5 w-5" /></button>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
-                    {notifications.map(n => (
-                      <div key={n.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-all">
-                        <p className="text-sm font-black text-slate-900">{n.title}</p>
-                        <p className="text-sm text-slate-500 mt-1">{n.message}</p>
+                    {notifications.length > 0 ? (
+                      <>
+                        {notifications.map(n => (
+                          <div key={n.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-all ${!n.is_read ? 'bg-brand-50/30' : ''}`}>
+                            <div className="flex justify-between items-start gap-2">
+                              <p className="text-sm font-black text-slate-900">{n.title}</p>
+                              {!n.is_read && <span className="h-2 w-2 bg-brand-600 rounded-full mt-1 flex-shrink-0"></span>}
+                            </div>
+                            <p className="text-sm text-slate-500 mt-1">{n.message}</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">{format(new Date(n.created_at), 'dd MMM, HH:mm')}</p>
+                          </div>
+                        ))}
+                        <Link 
+                          to="/logs" 
+                          onClick={() => setShowNotifications(false)}
+                          className="block p-4 text-center text-xs font-black text-brand-600 uppercase hover:bg-slate-50 transition-all"
+                        >
+                          View System Logs
+                        </Link>
+                      </>
+                    ) : (
+                      <div className="p-12 text-center">
+                        <BellIcon className="h-8 w-8 text-slate-200 mx-auto mb-3" />
+                        <p className="text-sm text-slate-400 font-medium">No history found</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               )}

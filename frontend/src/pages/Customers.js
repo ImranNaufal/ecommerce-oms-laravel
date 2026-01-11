@@ -131,8 +131,9 @@ export default function Customers() {
             <form onSubmit={handleSubmitCustomer} className="p-6 space-y-4">
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Full Name</label>
+                  <label htmlFor="full_name" className="text-sm font-black text-slate-400 uppercase mb-1 block">Full Name</label>
                   <input 
+                    id="full_name"
                     type="text" 
                     className={`input-modern ${formErrors.full_name ? 'border-red-500 bg-red-50' : ''}`}
                     value={formData.full_name} 
@@ -149,8 +150,9 @@ export default function Customers() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Email</label>
+                    <label htmlFor="email" className="text-sm font-black text-slate-400 uppercase mb-1 block">Email</label>
                     <input 
+                      id="email"
                       type="email" 
                       className={`input-modern ${formErrors.email ? 'border-red-500 bg-red-50' : ''}`}
                       value={formData.email} 
@@ -166,8 +168,9 @@ export default function Customers() {
                     )}
                   </div>
                   <div>
-                    <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Phone Number</label>
+                    <label htmlFor="phone" className="text-sm font-black text-slate-400 uppercase mb-1 block">Phone Number</label>
                     <input 
+                      id="phone"
                       type="text" 
                       className={`input-modern ${formErrors.phone ? 'border-red-500 bg-red-50' : ''}`}
                       value={formData.phone} 
@@ -184,8 +187,9 @@ export default function Customers() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-black text-slate-400 uppercase mb-1 block">Shipping Address</label>
+                  <label htmlFor="address" className="text-sm font-black text-slate-400 uppercase mb-1 block">Shipping Address</label>
                   <textarea 
+                    id="address"
                     className={`input-modern h-20 resize-none ${formErrors.address ? 'border-red-500 bg-red-50' : ''}`}
                     value={formData.address} 
                     onChange={e => {

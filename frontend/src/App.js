@@ -29,7 +29,18 @@ import ApiLogs from './pages/ApiLogs';
 import Layout from './components/Layout'; // The main layout wrapper with sidebar and header
 
 // Initialize a new React Query client for data fetching, caching, and state management.
-const queryClient = new QueryClient();
+// Configured for near-real-time updates by polling every 5 seconds.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchInterval: 5000, // Poll data every 5 seconds
+      refetchOnWindowFocus: true, // Sync data when user switches back to tab
+      staleTime: 0, // Always consider data stale to trigger background refreshes
+      cacheTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+      retry: 1, // Retry failed requests once
+    },
+  },
+});
 
 /**
  * A wrapper component that protects routes requiring authentication.

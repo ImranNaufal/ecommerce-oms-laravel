@@ -28,6 +28,9 @@ export default function OrderDetail() {
   }, {
     onSuccess: () => {
       queryClient.invalidateQueries(['order', id]);
+      queryClient.invalidateQueries('commission-transactions');
+      queryClient.invalidateQueries('commission-summary');
+      queryClient.invalidateQueries('dashboard-stats');
       toast.success('Status dikemaskini!');
       setSelectedStatus('');
     }
