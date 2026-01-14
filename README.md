@@ -187,9 +187,7 @@ ecommerce-oms/
 │       └── context/      # State Management
 │
 ├── tests/                # E2E Tests (Playwright)
-├── screenshots/          # Portfolio Screenshots
-│
-└── FULL_STACK_PORTFOLIO.md  # Complete Documentation
+└── screenshots/          # Portfolio Screenshots
 ```
 
 ---
