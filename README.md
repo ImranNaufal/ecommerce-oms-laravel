@@ -232,11 +232,50 @@ ecommerce-oms/
 
 ## 📷 Screenshots
 
+### Dashboard - Real-time Analytics
 ![Dashboard](screenshots/01-dashboard.png)
-![Orders](screenshots/04-orders-list.png)
-![Products](screenshots/02-products-list.png)
+*Real-time KPIs, sales charts, and marketplace integration health monitoring*
 
-*See `screenshots/` folder for more (12 total)*
+### Order Management
+![Orders List](screenshots/04-orders-list.png)
+*Complete order lifecycle management with filters and status tracking*
+
+![Order Detail](screenshots/05-order-detail.png)
+*Detailed order view with timeline and status update workflow*
+
+### Product Catalog
+![Products](screenshots/02-products-list.png)
+*Product management with auto-generated SKU and inventory tracking*
+
+![Add Product Modal](screenshots/03-add-product-modal.png)
+*Product creation form with validation*
+
+### Customer Database
+![Customers](screenshots/06-customers.png)
+*CRM with search functionality and purchase history*
+
+### Commission Tracking
+![Commissions](screenshots/07-commissions.png)
+*Multi-tier commission system with approval workflow*
+
+### Marketplace Integration
+![API Integrations](screenshots/08-integrations.png)
+*Sales channel management with real-time connection status (🟢 Connected, 🔴 Disconnected)*
+
+### Notifications & Search
+![Notifications](screenshots/10-notifications.png)
+*Real-time notification system*
+
+![Search Results](screenshots/11-search-results.png)
+*Global search across products and orders*
+
+### System Monitoring
+![API Logs](screenshots/12-system-logs.png)
+*API activity logs for webhook debugging and monitoring*
+
+---
+
+**Total:** 12 high-quality screenshots showing complete system functionality
 
 ---
 
