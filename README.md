@@ -33,21 +33,14 @@
 
 ## 📚 Documentation
 
-### 🌟 Main Documentation
+**[⚡ Setup Guide](SETUP_GUIDE.md)** - Installation instructions to run locally
 
-**[📖 FULL STACK PORTFOLIO](FULL_STACK_PORTFOLIO.md)** ⭐
-> Complete technical documentation covering:
-> - Full-stack capabilities aligned with company requirements
-> - System architecture & database design
-> - Backend logic & business rules
-> - API integration & automation
-> - Performance optimization & security
-> - **Everything needed for technical presentation**
-
-### 📄 Quick Start
-
-**[⚡ SETUP GUIDE](SETUP_GUIDE.md)**
-> Installation instructions to run the project locally
+**Additional documentation available upon request for:**
+- Complete system architecture & database design
+- API integration patterns & webhook implementation
+- Performance optimization techniques
+- Security best practices
+- Business logic documentation
 
 ---
 
@@ -269,11 +262,18 @@ ecommerce-oms/
 
 ---
 
-## 📞 Contact
+## 📞 Contact & Links
 
-**Documentation:** [FULL_STACK_PORTFOLIO.md](FULL_STACK_PORTFOLIO.md)  
+**Repository:** https://github.com/ImranNaufal/ecommerce-oms-laravel  
 **Live Demo:** [Coming Soon]  
-**Repository:** [Your GitHub/GitLab]
+**Documentation:** Available upon request for interviews
+
+**Technical Highlights:**
+- Complete system architecture documentation
+- API endpoint reference (40+ endpoints)
+- Database schema & optimization guide
+- Integration patterns & examples
+- Security implementation details
 
 ---
 
