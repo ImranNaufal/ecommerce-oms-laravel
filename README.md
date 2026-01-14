@@ -299,21 +299,6 @@ ecommerce-oms/
 
 ---
 
-## 📞 Contact & Links
-
-**Repository:** https://github.com/ImranNaufal/ecommerce-oms-laravel  
-**Live Demo:** [Coming Soon]  
-**Documentation:** Available upon request for interviews
-
-**Technical Highlights:**
-- Complete system architecture documentation
-- API endpoint reference (40+ endpoints)
-- Database schema & optimization guide
-- Integration patterns & examples
-- Security implementation details
-
----
-
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file
