@@ -116,13 +116,60 @@ class WebhookController extends Controller
                         'quantity' => $item['quantity'],
                         'price' => $item['price'],
                         'cost_price' => $product->cost_price
-                        // subtotal and profit are MySQL GENERATED columns
                     ]);
 
                     // Deduct stock
                     DB::table('products')->where('id', $product->id)->decrement('stock_quantity', $item['quantity']);
+
+                    // Log inventory transaction (Sync with Audit Trail)
+                    DB::table('inventory_transactions')->insert([
+                        'product_id' => $product->id,
+                        'transaction_type' => 'sale',
+                        'quantity' => -$item['quantity'],
+                        'reference_type' => 'order',
+                        'reference_id' => $orderId,
+                        'created_by' => 1, // System/Admin ID for automation
+                        'notes' => "External Order via " . ucfirst($request->marketplace),
+                        'created_at' => now()
+                    ]);
+
+                    // Check for Low Stock (Sync with Alerts)
+                    $updatedProduct = DB::table('products')->where('id', $product->id)->first();
+                    if ($updatedProduct->stock_quantity <= $updatedProduct->low_stock_threshold) {
+                        DB::table('notifications')->insert([
+                            'user_id' => 1,
+                            'title' => '⚠️ Critical: Low Stock',
+                            'message' => "Product '{$updatedProduct->name}' hit low stock after {$request->marketplace} order.",
+                            'type' => 'danger',
+                            'is_read' => false,
+                            'action_url' => '/products',
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
                 }
             }
+
+            // Update customer statistics (Sync with CRM)
+            DB::table('customers')
+                ->where('id', $customerId)
+                ->increment('total_orders');
+            
+            DB::table('customers')
+                ->where('id', $customerId)
+                ->increment('total_spent', $request->totals['total']);
+
+            // --- NEW: Notify Admin about External Order ---
+            DB::table('notifications')->insert([
+                'user_id' => 1, // Notify Admin
+                'title' => '🛒 New External Order',
+                'message' => "Order {$orderNumber} received from " . ucfirst($request->marketplace) . ". Total: RM" . number_format($request->totals['total'], 2),
+                'type' => 'success',
+                'is_read' => false,
+                'action_url' => "/orders/{$orderId}",
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
             DB::commit();
 
@@ -144,16 +191,13 @@ class WebhookController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             
-            DB::table('api_logs')->insert([
-                'endpoint' => '/webhook/order/external',
-                'method' => 'POST',
-                'request_payload' => json_encode($request->all()),
-                'success' => false,
-                'error_message' => $e->getMessage(),
-                'created_at' => now()
-            ]);
+            \Log::error('Webhook Injection Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 
-            return response()->json(['success' => false, 'message' => 'Webhook processing failed'], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Webhook processing failed: ' . $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
         }
     }
 

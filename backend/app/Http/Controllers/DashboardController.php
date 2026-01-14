@@ -51,12 +51,18 @@ class DashboardController extends Controller
                 SUM(CASE WHEN DATE(created_at) >= DATE_SUB(NOW(), INTERVAL ? DAY) AND payment_status = "paid" THEN total ELSE 0 END) as recent_revenue
             ', [$period, $period])->first();
 
-            // Calculate total profit (Admin only)
-            if ($user->role === 'admin') {
-                $profitStats = DB::table('order_items as oi')
+            // Calculate total profit (Admin and Staff only)
+            if ($user->role === 'admin' || $user->role === 'staff') {
+                $profitQuery = DB::table('order_items as oi')
                     ->join('orders as o', 'oi.order_id', '=', 'o.id')
-                    ->where('o.payment_status', 'paid')
-                    ->selectRaw('
+                    ->where('o.payment_status', 'paid');
+
+                // If staff, filter only their assigned orders
+                if ($user->role === 'staff') {
+                    $profitQuery->where('o.assigned_staff_id', $user->id);
+                }
+
+                $profitStats = $profitQuery->selectRaw('
                         SUM(oi.profit) as total_profit,
                         SUM(oi.subtotal) as total_sales
                     ')
@@ -93,12 +99,25 @@ class DashboardController extends Controller
                 ')->first();
             }
 
+            // Sales Channel Health (Admin only)
+            $channelHealth = null;
+            if ($user->role === 'admin') {
+                $channels = \App\Models\SalesChannel::select('id', 'name', 'type', 'is_active', 'last_sync_at', 'api_key', 'api_endpoint')->get();
+                
+                // Add connection status for each channel
+                $channelHealth = $channels->map(function($channel) {
+                    $channel->connection_status = $this->testConnection($channel);
+                    return $channel;
+                });
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'orders' => $orderStats,
                     'commissions' => $commissionStats,
-                    'products' => $productStats
+                    'products' => $productStats,
+                    'channels' => $channelHealth
                 ]
             ]);
 
@@ -123,15 +142,24 @@ class DashboardController extends Controller
     public function salesChart(Request $request)
     {
         try {
+            $user = auth()->user();
             $days = $request->input('days', 30);
 
-            $chartData = DB::table('orders')
+            $query = DB::table('orders')
                 ->select(
                     DB::raw('DATE(created_at) as date'),
                     DB::raw('SUM(CASE WHEN payment_status = "paid" THEN total ELSE 0 END) as revenue')
                 )
-                ->where('created_at', '>=', now()->subDays($days))
-                ->groupBy(DB::raw('DATE(created_at)'))
+                ->where('created_at', '>=', now()->subDays($days));
+
+            // Role-based filtering for the chart
+            if ($user->role === 'staff') {
+                $query->where('assigned_staff_id', $user->id);
+            } elseif ($user->role === 'affiliate') {
+                $query->where('affiliate_id', $user->id);
+            }
+
+            $chartData = $query->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy('date', 'asc')
                 ->get();
 
@@ -187,6 +215,90 @@ class DashboardController extends Controller
                 'success' => false,
                 'message' => 'Server error'
             ], 500);
+        }
+    }
+
+    /**
+     * Global Search
+     * 
+     * Search across products and orders
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function search(Request $request)
+    {
+        try {
+            $query = $request->input('q');
+            if (!$query || strlen($query) < 2) {
+                return response()->json(['success' => true, 'data' => ['products' => [], 'orders' => []]]);
+            }
+
+            $products = DB::table('products')
+                ->where('name', 'LIKE', "%{$query}%")
+                ->orWhere('sku', 'LIKE', "%{$query}%")
+                ->limit(5)
+                ->get(['id', 'name', 'sku', 'price']);
+
+            $orders = DB::table('orders')
+                ->where('order_number', 'LIKE', "%{$query}%")
+                ->limit(5)
+                ->get(['id', 'order_number', 'status', 'total']);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'products' => $products,
+                    'orders' => $orders
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Search failed'], 500);
+        }
+    }
+
+    /**
+     * Test actual API connection
+     * Returns: 'connected', 'disconnected', or 'not_configured'
+     */
+    private function testConnection($channel)
+    {
+        // Don't test internal website channel - always connected
+        if ($channel->type === 'website') {
+            return 'connected';
+        }
+
+        // For external channels, check if API credentials configured
+        if (empty($channel->api_key) || empty($channel->api_endpoint)) {
+            return 'not_configured';
+        }
+
+        try {
+            // Test connection to external API
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $channel->api_endpoint);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $channel->api_key,
+                'Content-Type: application/json'
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            // Consider 200-499 as successful connection
+            if ($httpCode >= 200 && $httpCode < 500) {
+                return 'connected';
+            }
+
+            return 'disconnected';
+
+        } catch (\Exception $e) {
+            return 'disconnected';
         }
     }
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
 import { validators } from '../utils/validators';
@@ -17,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function Products() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -95,7 +97,7 @@ export default function Products() {
 
   // Checkout - OPTIMIZED untuk response pantas
   const checkoutMutation = useMutation(async (orderData) => {
-    const res = await api.post('/orders', orderData, { timeout: 5000 });
+    const res = await api.post('/orders', orderData, { timeout: 15000 });
     return res.data;
   }, {
     onSuccess: (data) => {
@@ -217,9 +219,11 @@ export default function Products() {
           <p className="mt-2 text-slate-500 font-medium uppercase text-xs tracking-[0.2em]">Urus stok dan pesanan manual</p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <button onClick={openAddModal} className="btn-modern bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 flex-1">
-            <PlusIcon className="h-4 w-4" /> Tambah Item
-          </button>
+          {user?.role !== 'affiliate' && (
+            <button onClick={openAddModal} className="btn-modern bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 flex-1">
+              <PlusIcon className="h-4 w-4" /> Tambah Item
+            </button>
+          )}
           <button onClick={() => setIsCartOpen(true)} className="btn-modern btn-modern-primary relative flex-1">
             <ShoppingCartIcon className="h-4 w-4" /> Troli ({cart.length})
           </button>
@@ -248,25 +252,27 @@ export default function Products() {
                     {product.stock_quantity} UNIT
                   </span>
                 </div>
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all flex gap-2 z-10">
-                  <button onClick={() => openEditModal(product)} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-brand-600 hover:bg-brand-600 hover:text-white transition-all" title="Edit Product">
-                    <PencilSquareIcon className="h-4 w-4" />
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if(window.confirm('Archive this product? It will be hidden from the catalog.')) {
-                        archiveProductMutation.mutate(product);
-                      }
-                    }} 
-                    className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-amber-600 hover:bg-amber-600 hover:text-white transition-all"
-                    title="Archive Product"
-                  >
-                    <ArchiveBoxIcon className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => {if(window.confirm('Padam produk ini?')) deleteProductMutation.mutate({ id: product.id })}} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-red-600 hover:bg-red-600 hover:text-white transition-all" title="Delete Product">
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
+                {user?.role !== 'affiliate' && (
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all flex gap-2 z-10">
+                    <button onClick={() => openEditModal(product)} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-brand-600 hover:bg-brand-600 hover:text-white transition-all" title="Edit Product">
+                      <PencilSquareIcon className="h-4 w-4" />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if(window.confirm('Archive this product? It will be hidden from the catalog.')) {
+                          archiveProductMutation.mutate(product);
+                        }
+                      }} 
+                      className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-amber-600 hover:bg-amber-600 hover:text-white transition-all"
+                      title="Archive Product"
+                    >
+                      <ArchiveBoxIcon className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => {if(window.confirm('Padam produk ini?')) deleteProductMutation.mutate({ id: product.id })}} className="p-2 bg-white/90 backdrop-blur shadow-sm rounded-lg text-red-600 hover:bg-red-600 hover:text-white transition-all" title="Delete Product">
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="p-5">
                 <div className="flex items-start justify-between mb-1">

@@ -33,11 +33,12 @@ import Layout from './components/Layout'; // The main layout wrapper with sideba
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchInterval: 5000, // Poll data every 5 seconds
-      refetchOnWindowFocus: true, // Sync data when user switches back to tab
-      staleTime: 0, // Always consider data stale to trigger background refreshes
-      cacheTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
-      retry: 1, // Retry failed requests once
+      refetchInterval: 10000, // Poll every 10 seconds (reduce server load)
+      refetchOnWindowFocus: true,
+      staleTime: 5000, // Keep data fresh for 5 seconds
+      cacheTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+      retry: 1,
+      refetchOnMount: true,
     },
   },
 });
@@ -73,6 +74,31 @@ const ProtectedRoute = ({ children }) => {
 };
 
 /**
+ * A wrapper component that redirects authenticated users away from public routes.
+ * Useful for the login page.
+ */
+const AuthRedirect = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  // Wait for auth check to complete before deciding where to go
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  // If already logged in, go to dashboard
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  // If not logged in, show the child (Login page)
+  return children;
+};
+
+/**
  * The main App component that orchestrates all providers and routes.
  */
 function App() {
@@ -90,8 +116,15 @@ function App() {
             
             <Routes>
               {/* --- Public Route --- */}
-              {/* The login page is accessible to everyone. */}
-              <Route path="/login" element={<Login />} />
+              {/* Redirect to dashboard if user is already logged in */}
+              <Route 
+                path="/login" 
+                element={
+                  <AuthRedirect>
+                    <Login />
+                  </AuthRedirect>
+                } 
+              />
 
               {/* --- Protected Routes --- */}
               {/* All routes nested under this path are protected by `ProtectedRoute`. */}

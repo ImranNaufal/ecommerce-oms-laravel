@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from 'react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -10,13 +10,15 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ArrowRightIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  RectangleStackIcon
 } from '@heroicons/react/24/outline';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: stats, isLoading: statsLoading } = useQuery('dashboard-stats', async () => {
     const res = await api.get('/dashboard/stats');
@@ -26,7 +28,7 @@ export default function Dashboard() {
   const { data: salesChart } = useQuery('sales-chart', async () => {
     const res = await api.get('/dashboard/sales-chart');
     return res.data.data;
-  }, { enabled: user?.role === 'admin', refetchInterval: 30000 }); // Chart refetch slightly slower
+  }, { enabled: user?.role === 'admin' || user?.role === 'staff', refetchInterval: 30000 }); // Chart refetch slightly slower
 
   const { data: activities } = useQuery('activities', async () => {
     const res = await api.get('/dashboard/activities?limit=5');
@@ -35,18 +37,19 @@ export default function Dashboard() {
 
   const { data: alertData } = useQuery('system-alerts', async () => {
     const res = await api.get('/notifications?limit=2');
+    console.log('Fetched alerts:', res.data.data.notifications); // Debug log
     return {
       alerts: res.data.data.notifications.map(n => ({
         type: n.type === 'info' ? 'info' : (n.type === 'success' ? 'success' : (n.type === 'warning' ? 'warning' : 'danger')),
         title: n.title,
         message: n.message,
         action_label: 'View Detail',
-        action_url: '/logs'
+        action_url: n.action_url || n.actionUrl || '/logs'
       }))
     };
   }, { refetchInterval: 5000 });
 
-  if (statsLoading) {
+  if (statsLoading && !stats) {
     return <div className="flex items-center justify-center h-[60vh]"><div className="spinner"></div></div>;
   }
 
@@ -74,20 +77,24 @@ export default function Dashboard() {
       {alertData?.alerts?.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
           {alertData.alerts.map((alert, i) => (
-            <div key={i} className={`p-4 rounded-2xl border flex items-start gap-4 transition-all hover:shadow-md ${
-              alert.type === 'danger' ? 'bg-red-50 border-red-100 text-red-700' : 
-              alert.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-700' : 
-              'bg-blue-50 border-blue-100 text-blue-700'
-            }`}>
-              <div className={`p-2 rounded-xl bg-white shadow-sm`}>
+            <div 
+              key={i} 
+              onClick={() => navigate(alert.action_url)}
+              className={`p-4 rounded-2xl border flex items-start gap-4 transition-all hover:shadow-lg cursor-pointer group ${
+                alert.type === 'danger' ? 'bg-red-50 border-red-100 text-red-700' : 
+                alert.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-700' : 
+                'bg-blue-50 border-blue-100 text-blue-700'
+              }`}
+            >
+              <div className={`p-2 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform`}>
                 <ExclamationTriangleIcon className="h-5 w-5" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-black uppercase tracking-widest mb-1">{alert.title}</p>
                 <p className="text-sm font-medium opacity-80 mb-3">{alert.message}</p>
-                <Link to={alert.action_url} className="text-xs font-black uppercase flex items-center gap-1 hover:gap-2 transition-all">
+                <div className="text-xs font-black uppercase flex items-center gap-1 group-hover:gap-2 transition-all">
                   {alert.action_label} <ArrowRightIcon className="h-3 w-3" />
-                </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -96,12 +103,17 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[
+        {(user?.role === 'affiliate' ? [
+          { label: 'Total Referrals', val: stats?.orders?.total_orders || 0, icon: ShoppingCartIcon, color: 'text-brand-600', bg: 'bg-brand-50', trend: 'Orders' },
+          { label: 'Total Sales Value', val: `RM${parseFloat(stats?.orders?.total_revenue || 0).toLocaleString()}`, icon: CurrencyDollarIcon, color: 'text-success', bg: 'bg-green-50', trend: 'Gross' },
+          { label: 'Confirmed Earnings', val: `RM${parseFloat(stats?.commissions?.approved_commissions || 0).toLocaleString()}`, icon: CheckCircleIcon, color: 'text-purple-600', bg: 'bg-purple-50', trend: 'Approved' },
+          { label: 'Pending Payout', val: `RM${parseFloat(stats?.commissions?.pending_commissions || 0).toLocaleString()}`, icon: ClockIcon, color: 'text-warning', bg: 'bg-amber-50', trend: 'Waiting' }
+        ] : [
           { label: 'Total Orders', val: stats?.orders?.total_orders || 0, icon: ShoppingCartIcon, color: 'text-brand-600', bg: 'bg-brand-50', trend: `+${stats?.orders?.recent_orders || 0} new` },
           { label: 'Net Revenue', val: `RM${parseFloat(stats?.orders?.total_revenue || 0).toLocaleString()}`, icon: CurrencyDollarIcon, color: 'text-success', bg: 'bg-green-50', trend: 'Sales' },
           { label: 'Gross Profit', val: `RM${parseFloat(stats?.orders?.total_profit || 0).toLocaleString()}`, icon: ChartBarIcon, color: 'text-purple-600', bg: 'bg-purple-50', trend: `${stats?.orders?.profit_margin || 0}% margin` },
           { label: 'Pending Payout', val: `RM${parseFloat(stats?.commissions?.pending_commissions || 0).toLocaleString()}`, icon: ClockIcon, color: 'text-warning', bg: 'bg-amber-50', trend: 'Commission' }
-        ].map((s, idx) => (
+        ]).map((s, idx) => (
           <div key={idx} className="premium-card p-6 border-none shadow-soft flex flex-col justify-between group hover:border-brand-100 transition-all">
             <div className="flex items-center justify-between mb-4">
               <div className={`h-12 w-12 rounded-2xl ${s.bg} flex items-center justify-center transition-transform group-hover:scale-110`}>
@@ -116,6 +128,40 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* Integration Health (Admin Only) */}
+      {user?.role === 'admin' && stats?.channels && (
+        <div className="premium-card p-6 border-none shadow-soft bg-slate-900 text-white overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <RectangleStackIcon className="h-24 w-24" />
+          </div>
+          <div className="relative z-10">
+            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Marketplace Integration Health</h3>
+            <div className="flex flex-wrap gap-8">
+              {stats.channels.map((ch, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`h-2.5 w-2.5 rounded-full ${
+                    ch.connection_status === 'connected' 
+                      ? 'bg-success animate-pulse' 
+                      : ch.connection_status === 'not_configured'
+                        ? 'bg-slate-400'
+                        : 'bg-danger animate-pulse'
+                  }`}></div>
+                  <div>
+                    <p className="text-sm font-black tracking-tight">{ch.name}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">
+                      {ch.connection_status === 'connected' ? '✓ Online' : 
+                       ch.connection_status === 'not_configured' ? 'Not Configured' : 
+                       '✗ Offline'} · 
+                      {ch.last_sync_at ? `Last: ${format(new Date(ch.last_sync_at), 'HH:mm')}` : 'Never'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 premium-card p-8 border-none shadow-soft overflow-hidden">

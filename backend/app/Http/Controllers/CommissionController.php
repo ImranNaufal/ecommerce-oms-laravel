@@ -188,6 +188,19 @@ class CommissionController extends Controller
                 ->limit(20)
                 ->get();
 
+            // Privacy Filter: Only Admin can see the actual RM amounts of others
+            $user = auth()->user();
+            if ($user->role !== 'admin') {
+                $leaderboard = $leaderboard->map(function($item) use ($user) {
+                    if ($item->id !== $user->id) {
+                        // Hide RM amount for others
+                        $item->total_commission = 'HIDDEN';
+                        $item->email = '***@***.com'; // Mask email
+                    }
+                    return $item;
+                });
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $leaderboard

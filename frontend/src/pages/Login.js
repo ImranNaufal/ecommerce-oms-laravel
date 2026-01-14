@@ -4,15 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { LockClosedIcon, UserIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const success = await login(formData.email, formData.password);
+    const success = await login(email, password);
     if (success) navigate('/');
     setLoading(false);
   };
@@ -43,7 +44,7 @@ export default function Login() {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Alamat Emel</label>
               <div className="relative">
                 <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input type="email" required className="input-modern pl-11" placeholder="admin@ecommerce.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                <input type="email" required className="input-modern pl-11" placeholder="admin@ecommerce.com" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
             </div>
 
@@ -51,7 +52,7 @@ export default function Login() {
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Kata Laluan</label>
               <div className="relative">
                 <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input type="password" required className="input-modern pl-11" placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                <input type="password" required className="input-modern pl-11" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
             </div>
 

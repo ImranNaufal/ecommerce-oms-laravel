@@ -16,20 +16,31 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         try {
+            $user = auth()->user();
             $perPage = $request->input('limit', 20);
             
-            $query = DB::table('customers');
+            $query = DB::table('customers as c');
+
+            // --- Logic Ownership: Staff only sees customers they have served ---
+            if ($user->role === 'staff') {
+                $query->whereExists(function ($q) use ($user) {
+                    $q->select(DB::raw(1))
+                      ->from('orders')
+                      ->whereColumn('orders.customer_id', 'c.id')
+                      ->where('orders.assigned_staff_id', $user->id);
+                });
+            }
 
             if ($request->has('search')) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
-                    $q->where('full_name', 'LIKE', "%{$search}%")
-                      ->orWhere('email', 'LIKE', "%{$search}%")
-                      ->orWhere('phone', 'LIKE', "%{$search}%");
+                    $q->where('c.full_name', 'LIKE', "%{$search}%")
+                      ->orWhere('c.email', 'LIKE', "%{$search}%")
+                      ->orWhere('c.phone', 'LIKE', "%{$search}%");
                 });
             }
 
-            $customers = $query->orderBy('created_at', 'desc')->paginate($perPage);
+            $customers = $query->orderBy('c.created_at', 'desc')->paginate($perPage);
 
             return response()->json([
                 'success' => true,
@@ -96,7 +107,25 @@ class CustomerController extends Controller
     public function show($id)
     {
         try {
-            $customer = DB::table('customers')->where('id', $id)->first();
+            $user = auth()->user();
+            $query = DB::table('customers')->where('id', $id);
+
+            // Access Control for Staff
+            if ($user->role === 'staff') {
+                $hasServed = DB::table('orders')
+                    ->where('customer_id', $id)
+                    ->where('assigned_staff_id', $user->id)
+                    ->exists();
+
+                if (!$hasServed) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Access denied. You have not served this customer.'
+                    ], 403);
+                }
+            }
+
+            $customer = $query->first();
 
             if (!$customer) {
                 return response()->json([

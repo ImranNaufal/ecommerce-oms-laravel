@@ -108,11 +108,14 @@ export default function Commissions() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Monthly Chart */}
-        <div className="lg:col-span-2 premium-card p-8 border-none shadow-soft overflow-hidden">
+        {/* Monthly Earnings Chart - Visible to All (shows personal for staff, company for admin) */}
+        <div className={`premium-card p-8 border-none shadow-soft overflow-hidden ${user?.role === 'admin' ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-black text-slate-900 tracking-tight text-brand-600">Prestasi Bulanan</h3>
+            <h3 className="text-lg font-black text-slate-900 tracking-tight text-brand-600">
+              {user?.role === 'admin' ? 'Prestasi Syarikat' : 'Prestasi Saya'}
+            </h3>
           </div>
+          {/* Chart code remains same... */}
           <div className="h-[350px] w-full -ml-4">
             {summary?.monthly && summary.monthly.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -145,36 +148,38 @@ export default function Commissions() {
           </div>
         </div>
 
-        {/* Leaderboard */}
-        <div className="premium-card p-0 border-none shadow-soft overflow-hidden">
-          <div className="p-8 border-b border-slate-50 bg-slate-900 text-white">
-            <div className="flex items-center gap-3">
-              <TrophyIcon className="h-6 w-6 text-warning" />
-              <h3 className="text-lg font-black italic tracking-tighter uppercase">Top Affiliate</h3>
+        {/* Leaderboard - Admin Only */}
+        {user?.role === 'admin' && (
+          <div className="premium-card p-0 border-none shadow-soft overflow-hidden">
+            <div className="p-8 border-b border-slate-50 bg-slate-900 text-white">
+              <div className="flex items-center gap-3">
+                <TrophyIcon className="h-6 w-6 text-warning" />
+                <h3 className="text-lg font-black italic tracking-tighter uppercase">Top Performance</h3>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              {leaderboard && leaderboard.length > 0 ? leaderboard.map((item, idx) => (
+                <div key={item.id} className={`flex items-center gap-4 p-4 rounded-2xl ${item.id === user.id ? 'bg-brand-50 border border-brand-100' : 'bg-slate-50'}`}>
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-warning text-white' : 'bg-white text-slate-400'}`}>
+                    #{idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-900 truncate">{item.full_name}</p>
+                    <p className="text-xs font-bold text-brand-600 uppercase">{item.tier || 'Silver'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black text-slate-900">RM{parseFloat(item.total_commission || 0).toFixed(0)}</p>
+                  </div>
+                </div>
+              )) : (
+                <div className="p-8 text-center">
+                  <TrophyIcon className="h-12 w-12 text-slate-200 mx-auto mb-2" />
+                  <p className="text-sm text-slate-400 font-medium">Tiada data prestasi bulan ini</p>
+                </div>
+              )}
             </div>
           </div>
-          <div className="p-4 space-y-3">
-            {leaderboard && leaderboard.length > 0 ? leaderboard.map((item, idx) => (
-              <div key={item.id} className={`flex items-center gap-4 p-4 rounded-2xl ${item.id === user.id ? 'bg-brand-50 border border-brand-100' : 'bg-slate-50'}`}>
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-warning text-white' : 'bg-white text-slate-400'}`}>
-                  #{idx + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-slate-900 truncate">{item.full_name}</p>
-                  <p className="text-xs font-bold text-brand-600 uppercase">{item.tier || 'Silver'}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-black text-slate-900">RM{parseFloat(item.total_commission || 0).toFixed(0)}</p>
-                </div>
-              </div>
-            )) : (
-              <div className="p-8 text-center">
-                <TrophyIcon className="h-12 w-12 text-slate-200 mx-auto mb-2" />
-                <p className="text-sm text-slate-400 font-medium">Tiada data prestasi bulan ini</p>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Transaction Table */}

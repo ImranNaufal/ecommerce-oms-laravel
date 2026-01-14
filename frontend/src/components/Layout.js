@@ -217,7 +217,14 @@ export default function Layout() {
                     {notifications.length > 0 ? (
                       <>
                         {notifications.map(n => (
-                          <div key={n.id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-all ${!n.is_read ? 'bg-brand-50/30' : ''}`}>
+                          <div 
+                            key={n.id} 
+                            onClick={() => {
+                              if (n.action_url) navigate(n.action_url);
+                              setShowNotifications(false);
+                            }}
+                            className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-all cursor-pointer ${!n.is_read ? 'bg-brand-50/30' : ''}`}
+                          >
                             <div className="flex justify-between items-start gap-2">
                               <p className="text-sm font-black text-slate-900">{n.title}</p>
                               {!n.is_read && <span className="h-2 w-2 bg-brand-600 rounded-full mt-1 flex-shrink-0"></span>}
@@ -226,13 +233,15 @@ export default function Layout() {
                             <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase">{format(new Date(n.created_at), 'dd MMM, HH:mm')}</p>
                           </div>
                         ))}
-                        <Link 
-                          to="/logs" 
-                          onClick={() => setShowNotifications(false)}
-                          className="block p-4 text-center text-xs font-black text-brand-600 uppercase hover:bg-slate-50 transition-all"
+                        <button 
+                          onClick={() => {
+                            navigate('/logs');
+                            setShowNotifications(false);
+                          }}
+                          className="w-full p-4 text-center text-xs font-black text-brand-600 uppercase hover:bg-slate-50 transition-all border-none bg-transparent"
                         >
                           View System Logs
-                        </Link>
+                        </button>
                       </>
                     ) : (
                       <div className="p-12 text-center">

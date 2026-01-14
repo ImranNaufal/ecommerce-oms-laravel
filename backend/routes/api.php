@@ -101,8 +101,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
         Route::post('/', [OrderController::class, 'store']);
         Route::get('/{id}', [OrderController::class, 'show']);
-        Route::patch('/{id}/status', [OrderController::class, 'updateStatus']);
-        Route::patch('/{id}/payment', [OrderController::class, 'updatePayment']);
+        Route::patch('/{id}/status', [OrderController::class, 'updateStatus'])->middleware('role:admin,staff');
+        Route::patch('/{id}/payment', [OrderController::class, 'updatePayment'])->middleware('role:admin,staff');
     });
     
     // Customers Management
@@ -125,6 +125,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/sales-chart', [DashboardController::class, 'salesChart']);
     Route::get('/dashboard/activities', [DashboardController::class, 'recentActivities']);
+    Route::get('/search', [DashboardController::class, 'search']);
     
     // Sales Channels
     Route::prefix('channels')->group(function () {

@@ -48,17 +48,23 @@ class OrderController extends Controller
      */
     private function calculateCommission($orderId, $userId, $userType, $orderTotal)
     {
+        static $configCache = [];
+        
         try {
-            // Get active commission config for user
-            $config = DB::table('commission_configs')
-                ->where('user_id', $userId)
-                ->where('is_active', true)
-                ->where('effective_from', '<=', now())
-                ->where(function($query) {
-                    $query->whereNull('effective_until')
-                          ->orWhere('effective_until', '>=', now());
-                })
-                ->first();
+            // Check cache first
+            if (!isset($configCache[$userId])) {
+                $configCache[$userId] = DB::table('commission_configs')
+                    ->where('user_id', $userId)
+                    ->where('is_active', true)
+                    ->where('effective_from', '<=', now())
+                    ->where(function($query) {
+                        $query->whereNull('effective_until')
+                              ->orWhere('effective_until', '>=', now());
+                    })
+                    ->first();
+            }
+
+            $config = $configCache[$userId];
 
             if (!$config) {
                 return 0;
@@ -321,13 +327,15 @@ class OrderController extends Controller
                 // --- NEW: Trigger Low Stock Alert ---
                 $updatedProduct = DB::table('products')->where('id', $item['product_id'])->first();
                 if ($updatedProduct->stock_quantity <= $updatedProduct->low_stock_threshold) {
-                    \App\Models\Notification::create([
-                        'user_id' => $user->id, // Notify the person who made the order (usually staff/admin)
+                    DB::table('notifications')->insert([
+                        'user_id' => $user->id,
                         'title' => 'Low Stock Alert',
                         'message' => "Product '{$updatedProduct->name}' is running low ({$updatedProduct->stock_quantity} left).",
                         'type' => 'danger',
                         'is_read' => false,
-                        'action_url' => '/products'
+                        'action_url' => '/products',
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ]);
                 }
             }
@@ -342,13 +350,15 @@ class OrderController extends Controller
 
             // --- NEW: Notify Staff about Order ---
             if ($user->id) {
-                \App\Models\Notification::create([
+                DB::table('notifications')->insert([
                     'user_id' => $user->id,
                     'title' => 'New Order Assigned',
                     'message' => "You have been assigned to Order #{$orderNumber}. Total: RM" . number_format($total, 2),
                     'type' => 'info',
                     'is_read' => false,
-                    'action_url' => "/orders/{$orderId}"
+                    'action_url' => "/orders/{$orderId}",
+                    'created_at' => now(),
+                    'updated_at' => now()
                 ]);
             }
 

@@ -32,11 +32,15 @@ export default function Channels() {
   const syncMutation = useMutation(async (channelId) => {
     return await api.post(`/channels/${channelId}/sync`);
   }, {
-    onSuccess: (_, channelId) => {
-      toast.success(`Channel synchronized successfully!`);
+    onSuccess: (response, channelId) => {
+      toast.success(response.data.message || 'Channel synchronized successfully!');
       queryClient.invalidateQueries('channels');
     },
-    onError: () => toast.error('Failed to connect to API')
+    onError: (error) => {
+      const errorMessage = error.response?.data?.message || 'Failed to connect to API';
+      toast.error(errorMessage);
+      queryClient.invalidateQueries('channels'); // Refresh to update connection status
+    }
   });
 
   const updateChannelMutation = useMutation(async ({ id, data }) => {
@@ -176,23 +180,47 @@ export default function Channels() {
                   {getChannelIcon(channel.type)}
                 </div>
                 <span className={`status-badge text-[11px] flex items-center gap-1 ${
-                  channel.api_key && channel.is_active 
+                  channel.connection_status === 'connected'
                     ? 'bg-success/10 text-success' 
-                    : !channel.api_key 
+                    : channel.connection_status === 'not_configured'
                       ? 'bg-slate-100 text-slate-500'
                       : 'bg-danger/10 text-danger'
                 }`}>
                   <SignalIcon className="h-2 w-2" /> 
-                  {channel.api_key && channel.is_active 
+                  {channel.connection_status === 'connected'
                     ? 'Connected' 
-                    : !channel.api_key 
+                    : channel.connection_status === 'not_configured'
                       ? 'Not Configured' 
-                      : 'Offline'
+                      : 'Disconnected'
                   }
                 </span>
               </div>
               <h3 className="text-lg font-black text-slate-900 mb-1">{channel.name}</h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{channel.type} Integration</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">{channel.type} Integration</p>
+              
+              {/* Connection Status Alert */}
+              {channel.connection_status === 'disconnected' && (
+                <div className="bg-danger/10 border border-danger/20 rounded-lg p-2 mb-4">
+                  <p className="text-[10px] font-black text-danger uppercase flex items-center gap-1">
+                    <ExclamationCircleIcon className="h-3 w-3" /> 
+                    API Connection Failed
+                  </p>
+                  <p className="text-[9px] text-danger/70 mt-0.5">
+                    Unable to reach API endpoint. Check credentials.
+                  </p>
+                </div>
+              )}
+              {channel.connection_status === 'not_configured' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mb-4">
+                  <p className="text-[10px] font-black text-amber-700 uppercase flex items-center gap-1">
+                    <ExclamationCircleIcon className="h-3 w-3" /> 
+                    Setup Required
+                  </p>
+                  <p className="text-[9px] text-amber-600 mt-0.5">
+                    Configure API credentials to enable sync.
+                  </p>
+                </div>
+              )}
               
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -200,19 +228,35 @@ export default function Channels() {
                   <p className="text-sm font-black text-slate-900">{channel.total_orders || 0}</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase">API Status</p>
-                  <p className="text-sm font-black text-success">{channel.api_key ? 'Configured' : 'Not Set'}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase">Connection</p>
+                  <p className={`text-sm font-black ${
+                    channel.connection_status === 'connected' ? 'text-success' : 
+                    channel.connection_status === 'not_configured' ? 'text-slate-400' : 
+                    'text-danger'
+                  }`}>
+                    {channel.connection_status === 'connected' ? '✓ Online' : 
+                     channel.connection_status === 'not_configured' ? 'Not Set' : 
+                     '✗ Offline'}
+                  </p>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <button 
                   onClick={() => syncMutation.mutate(channel.id)}
-                  disabled={syncMutation.isLoading}
+                  disabled={syncMutation.isLoading || channel.connection_status === 'not_configured'}
                   aria-label={`Sync ${channel.name}`}
-                  className="flex-1 btn-modern bg-slate-900 text-white text-sm uppercase font-black tracking-widest hover:bg-brand-600 transition-all"
+                  className={`flex-1 btn-modern text-sm uppercase font-black tracking-widest transition-all ${
+                    channel.connection_status === 'not_configured' 
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                      : channel.connection_status === 'disconnected'
+                        ? 'bg-danger text-white hover:bg-danger/80'
+                        : 'bg-slate-900 text-white hover:bg-brand-600'
+                  }`}
+                  title={channel.connection_status === 'not_configured' ? 'Configure API first' : 'Sync with marketplace'}
                 >
-                  <ArrowPathIcon className={`h-3 w-3 ${syncMutation.isLoading ? 'animate-spin' : ''}`} /> Sync Now
+                  <ArrowPathIcon className={`h-3 w-3 ${syncMutation.isLoading ? 'animate-spin' : ''}`} /> 
+                  {channel.connection_status === 'disconnected' ? 'Retry' : 'Sync Now'}
                 </button>
                 <button 
                   onClick={() => openConfigModal(channel)}
@@ -225,7 +269,15 @@ export default function Channels() {
             </div>
             <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-50 flex items-center justify-between text-xs font-bold text-slate-400">
               <span>Last Sync: {channel.last_sync_at ? format(new Date(channel.last_sync_at), 'HH:mm') : 'Never'}</span>
-              <span className="flex items-center gap-1"><CheckCircleIcon className="h-3 w-3 text-success" /> {channel.api_key ? 'Key Set' : 'No Key'}</span>
+              <span className="flex items-center gap-1">
+                {channel.connection_status === 'connected' ? (
+                  <><CheckCircleIcon className="h-3 w-3 text-success" /> API Active</>
+                ) : channel.connection_status === 'not_configured' ? (
+                  <><ExclamationCircleIcon className="h-3 w-3 text-slate-400" /> Not Setup</>
+                ) : (
+                  <><ExclamationCircleIcon className="h-3 w-3 text-danger" /> Failed</>
+                )}
+              </span>
             </div>
           </div>
         ))}

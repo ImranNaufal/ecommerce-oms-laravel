@@ -46,3 +46,14 @@ uploads/
 
 # Cursor/AI specific
 .cursor/
+
+# Presentation/Portfolio documentation (keep locally, don't push)
+FULL_STACK_PORTFOLIO.md
+FILE_INDEX.md
+LEARNING_GUIDE.md
+PRESENTATION_GUIDE.md
+
+# Temporary test files
+count_notif.php
+backend/test_jwt.php
+backend/storage/framework/views/
