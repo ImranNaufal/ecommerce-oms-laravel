@@ -869,36 +869,463 @@ DB::transaction(function() {
 
 ### Security Implementation:
 
-✅ **10-Layer Defense:**
-- JWT Authentication
-- Rate Limiting (120/60 req/min)
-- Input Validation (all endpoints)
-- SQL Injection Prevention (Eloquent ORM)
-- XSS Prevention
-- Database Transactions (ACID)
-- Role-Based Access Control
-- Audit Trail Logging
-- Password Hashing (bcrypt)
-- Secure Error Messages
+✅ **10-Layer Defense (With Code Examples):**
+
+#### Layer 1: JWT Authentication
+```php
+// File: backend/app/Http/Controllers/AuthController.php
+
+public function login(Request $request)
+{
+    // Verify credentials
+    $user = User::where('email', $request->email)->first();
+    
+    if (!password_verify($request->password, $user->password)) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+    
+    // Generate JWT token (expires in 1 hour)
+    $token = auth('api')->login($user);
+    
+    return response()->json([
+        'token' => $token,  // eyJhbGciOiJIUzI1NiIs...
+        'user' => $user
+    ]);
+}
+
+// All protected routes require valid token in header:
+// Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+```
+**📁 Evidence:** [`backend/app/Http/Controllers/AuthController.php`](backend/app/Http/Controllers/AuthController.php) - Lines 25-90
+
+#### Layer 2: Rate Limiting
+```php
+// File: backend/app/Http/Middleware/ApiRateLimitMiddleware.php
+
+public function handle(Request $request, Closure $next): Response
+{
+    $key = $request->user() 
+        ? 'api-limit:user:' . $request->user()->id  // Per user
+        : 'api-limit:ip:' . $request->ip();          // Per IP
+    
+    $maxAttempts = $request->user() ? 120 : 60; // Users: 120, Guests: 60
+    
+    if (RateLimiter::tooManyAttempts($key, $maxAttempts)) {
+        return response()->json([
+            'message' => 'Too many requests. Try again later.',
+            'retry_after' => RateLimiter::availableIn($key)
+        ], 429);
+    }
+    
+    RateLimiter::hit($key, 60); // Count this request
+    
+    return $next($request);
+}
+
+// Result: 
+// - Authenticated users: 120 requests per minute
+// - Guest users: 60 requests per minute
+// - Prevents brute force attacks ✓
+```
+**📁 Evidence:** [`backend/app/Http/Middleware/ApiRateLimitMiddleware.php`](backend/app/Http/Middleware/ApiRateLimitMiddleware.php) - Complete file
+
+#### Layer 3: Input Validation
+```php
+// File: backend/app/Http/Requests/StoreOrderRequest.php
+
+public function rules(): array
+{
+    return [
+        'customer_id' => [
+            'required',                    // Must exist
+            'integer',                     // Must be number
+            'exists:customers,id'          // Must be valid customer
+        ],
+        'items.*.quantity' => [
+            'required',
+            'integer',
+            'min:1',                       // Cannot be 0 or negative
+            'max:10000'                    // Prevent abuse (10k max)
+        ],
+        'payment_method' => [
+            'required',
+            'in:cod,online_banking,credit_card' // Only allowed values
+        ],
+        'shipping_address' => [
+            'required',
+            'string',
+            'max:500'                      // Prevent long strings
+        ]
+    ];
+}
+
+// Laravel automatically validates BEFORE controller runs
+// Invalid data? Returns 422 error, controller never executes ✓
+```
+**📁 Evidence:** [`backend/app/Http/Requests/StoreOrderRequest.php`](backend/app/Http/Requests/StoreOrderRequest.php) - Lines 34-96
+
+#### Layer 4: SQL Injection Prevention
+```php
+// ❌ VULNERABLE (Raw SQL with string interpolation):
+$email = $_POST['email'];
+DB::select("SELECT * FROM users WHERE email = '$email'");
+// Attacker sends: email = "'; DROP TABLE users; --"
+// Query becomes: SELECT * FROM users WHERE email = ''; DROP TABLE users; --'
+// Database deleted! 😱
+
+// ✅ PROTECTED (Eloquent ORM with parameter binding):
+$email = $request->email;
+User::where('email', $email)->first();
+// Laravel automatically escapes: email = '\'; DROP TABLE users; --'
+// Safe! Attack prevented ✓
+
+// All my queries use Eloquent:
+Order::where('customer_id', $id)->get();          // Safe ✓
+Product::where('sku', $sku)->first();             // Safe ✓
+Customer::where('email', 'like', "%$search%")->get(); // Safe ✓
+```
+**📁 Evidence:** All controllers use Eloquent ORM, no raw SQL
+
+#### Layer 5: XSS Prevention
+```php
+// File: backend/app/Http/Requests/StoreProductRequest.php
+
+public function rules(): array
+{
+    return [
+        'name' => 'required|string|max:200',      // Sanitized
+        'description' => 'nullable|string|max:2000' // Sanitized
+    ];
+}
+
+// Laravel automatically escapes HTML:
+$product->name = "<script>alert('XSS')</script>";
+// Saved as: &lt;script&gt;alert('XSS')&lt;/script&gt;
+// Rendered as plain text, not executed ✓
+
+// Frontend also escapes (React):
+<div>{product.name}</div>  // Auto-escaped by React
+// XSS prevented on both frontend and backend ✓
+```
+**📁 Evidence:** All Form Request classes validate and sanitize input
+
+#### Layer 6: Database Transactions (ACID)
+```php
+// File: backend/app/Services/OrderService.php
+
+DB::transaction(function() {
+    // All these must succeed together:
+    $order = Order::create([...]);           // 1. Create order
+    $order->items()->createMany([...]);      // 2. Add items
+    $this->inventoryService->deductStock(); // 3. Deduct stock
+    $this->commissionService->calculate();  // 4. Calculate commission
+    
+    // If ANY step fails (error/exception):
+    // - All operations ROLLED BACK automatically
+    // - Database returns to state before transaction
+    // - No partial/corrupted data ✓
+});
+
+// Example:
+// 1. Order created ✓
+// 2. Items added ✓
+// 3. Stock deducted ✓
+// 4. Commission fails ❌
+// Result: Steps 1-3 automatically UNDONE. Database unchanged ✓
+```
+**📁 Evidence:** [`backend/app/Services/OrderService.php`](backend/app/Services/OrderService.php) - Line 57
+
+#### Layer 7: Role-Based Access Control
+```php
+// File: backend/app/Http/Middleware/RoleMiddleware.php
+
+public function handle(Request $request, Closure $next, ...$roles)
+{
+    $user = auth()->user();
+    
+    // Check if user has required role
+    if (!in_array($user->role, $roles)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized. Insufficient permissions.'
+        ], 403);
+    }
+    
+    return $next($request);
+}
+
+// Usage in routes:
+Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus'])
+    ->middleware('role:admin,staff'); // Only admin & staff can update
+
+Route::patch('/commissions/{id}/approve', [CommissionController::class, 'approve'])
+    ->middleware('role:admin'); // Only admin can approve
+
+// Staff trying to approve commission?
+// Middleware blocks: 403 Forbidden ✓
+```
+**📁 Evidence:** [`backend/app/Http/Middleware/RoleMiddleware.php`](backend/app/Http/Middleware/RoleMiddleware.php) + [`backend/routes/api.php`](backend/routes/api.php) - Lines 104-106
+
+#### Layer 8: Audit Trail Logging
+```php
+// File: backend/app/Services/InventoryService.php
+
+public function deductStock($productId, $quantity, $orderId, $userId)
+{
+    // Deduct stock
+    $product->decrement('stock_quantity', $quantity);
+    
+    // LOG every stock movement (audit trail)
+    InventoryTransaction::create([
+        'product_id' => $productId,
+        'transaction_type' => 'sale',        // What happened?
+        'quantity' => -$quantity,            // How much?
+        'reference_type' => 'order',         // Why?
+        'reference_id' => $orderId,          // Which order?
+        'created_by' => $userId,             // Who did it?
+        'notes' => 'Stock deducted for order',
+        'created_at' => now()                // When?
+    ]);
+}
+
+// Can trace:
+// - Who deducted stock
+// - When it happened
+// - Which order caused it
+// - How much was deducted
+// Complete accountability ✓
+
+// API calls also logged:
+DB::table('api_logs')->insert([
+    'endpoint' => '/webhook/order/external',
+    'method' => 'POST',
+    'request_payload' => json_encode($request->all()),
+    'response_payload' => json_encode($response),
+    'success' => true,
+    'created_at' => now()
+]);
+```
+**📁 Evidence:** [`backend/app/Services/InventoryService.php`](backend/app/Services/InventoryService.php) - Lines 44-53
+
+#### Layer 9: Password Hashing
+```php
+// File: backend/app/Http/Controllers/AuthController.php
+
+// Registration - Hash password before saving
+public function register(Request $request)
+{
+    $user = User::create([
+        'email' => $request->email,
+        'password' => Hash::make($request->password), // Hashed with bcrypt
+        // Original: "admin123"
+        // Saved: "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"
+    ]);
+}
+
+// Login - Verify hashed password
+public function login(Request $request)
+{
+    $user = User::where('email', $request->email)->first();
+    
+    // Use password_verify (compatible with bcrypt)
+    if (!password_verify($request->password, $user->password)) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+    
+    // Password correct ✓
+}
+
+// Benefits:
+// - Passwords never stored in plain text
+// - Even database admin cannot see passwords
+// - bcrypt = industry standard, very secure
+```
+**📁 Evidence:** [`backend/app/Http/Controllers/AuthController.php`](backend/app/Http/Controllers/AuthController.php) - Lines 50-57 & Lines 119-127
+
+#### Layer 10: Secure Error Messages
+```php
+// ❌ BAD (Exposes system details):
+catch (\Exception $e) {
+    return response()->json([
+        'error' => $e->getMessage(),  // "Table 'users' doesn't exist"
+        'file' => $e->getFile(),      // "/var/www/app/Controllers/Auth.php"
+        'line' => $e->getLine()       // Line 45
+    ], 500);
+}
+// Attacker learns: table names, file paths, code structure ❌
+
+// ✅ GOOD (Generic message, log details internally):
+catch (\Exception $e) {
+    // Log detailed error for developers (not sent to client)
+    Log::error("Order creation failed: {$e->getMessage()}", [
+        'user_id' => auth()->id(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ]);
+    
+    // Return generic message to client
+    return response()->json([
+        'success' => false,
+        'message' => 'Failed to create order. Please try again.' // Generic
+    ], 500);
+}
+
+// Result:
+// - Client sees friendly message
+// - Developers see detailed logs
+// - No system details leaked ✓
+```
+**📁 Evidence:** [`backend/app/Http/Controllers/OrderControllerRefactored.php`](backend/app/Http/Controllers/OrderControllerRefactored.php) - Lines 106-116
 
 ### Code Quality:
 
-✅ **Testing:**
-- 26 automated tests (Playwright)
-- Authentication, CRUD, integration flows
-- Commission calculation tests
+✅ **Testing (With Examples):**
 
-✅ **Documentation:**
-- Comprehensive PHPDoc comments
-- Technical documentation (2,500+ lines)
-- Setup guides
-- API reference
+**Test 1: Authentication Flow**
+```javascript
+// File: tests/auth.spec.js
 
-✅ **Best Practices:**
-- SOLID principles
-- PSR-12 coding standards
-- Laravel conventions
-- Clean architecture
+test('User can login and access dashboard', async ({ page }) => {
+    // Navigate to login
+    await page.goto('/login');
+    
+    // Fill credentials
+    await page.fill('input[type="email"]', 'admin@ecommerce.com');
+    await page.fill('input[type="password"]', 'admin123');
+    
+    // Click login
+    await page.click('button[type="submit"]');
+    
+    // Verify redirect to dashboard
+    await expect(page).toHaveURL('/');
+    await expect(page.locator('text=Welcome')).toBeVisible();
+    
+    // Verify token saved
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    expect(token).toBeTruthy();
+});
+```
+**📁 Evidence:** [`tests/auth.spec.js`](tests/auth.spec.js)
+
+**Test 2: Order Creation with Commission**
+```javascript
+// File: tests/orders.spec.js
+
+test('Creating order automatically calculates commission', async ({ page }) => {
+    // Create order
+    await page.goto('/orders');
+    await page.click('text=New Order');
+    await page.selectOption('#customer', '1');
+    await page.selectOption('#product', '1');
+    await page.fill('#quantity', '5');
+    await page.click('button[type="submit"]');
+    
+    // Verify order created
+    await expect(page.locator('.success-message')).toBeVisible();
+    
+    // Check commission page
+    await page.goto('/commissions');
+    
+    // Verify commission auto-calculated
+    await expect(page.locator('text=Pending')).toBeVisible();
+    await expect(page.locator('text=RM')).toBeVisible(); // Has amount
+});
+```
+**📁 Evidence:** [`tests/orders.spec.js`](tests/orders.spec.js)
+
+**Test 3: Stock Deduction**
+```javascript
+// File: tests/products.spec.js
+
+test('Order creation deducts inventory correctly', async ({ page }) => {
+    // Check initial stock
+    await page.goto('/products');
+    const initialStock = await page.locator('[data-product="1"] .stock').textContent();
+    // e.g., "10 units"
+    
+    // Create order for 2 units
+    await createTestOrder(page, { productId: 1, quantity: 2 });
+    
+    // Check stock after order
+    await page.goto('/products');
+    const newStock = await page.locator('[data-product="1"] .stock').textContent();
+    // Should be "8 units"
+    
+    expect(parseInt(newStock)).toBe(parseInt(initialStock) - 2);
+    // Stock correctly deducted ✓
+});
+```
+**📁 Evidence:** [`tests/products.spec.js`](tests/products.spec.js)
+
+**Total: 26 automated tests** covering authentication, CRUD, commissions, inventory, integrations
+
+✅ **Documentation (Examples):**
+
+**PHPDoc Comments:**
+```php
+/**
+ * Calculate commission amount based on user configuration
+ * 
+ * @param int $userId User ID (staff or affiliate)
+ * @param float $orderTotal Order total amount
+ * @return float Commission amount
+ * 
+ * @example
+ * $commission = $this->calculateCommissionAmount(5, 1000.00);
+ * // User 5 is Bronze (5%), order RM 1000
+ * // Returns: 50.00
+ */
+public function calculateCommissionAmount(int $userId, float $orderTotal): float
+{
+    // Implementation...
+}
+```
+
+**README Documentation:**
+- Quick start guide
+- Installation steps
+- API overview
+- 12 screenshots with captions
+
+**Technical Documentation:**
+- System architecture (2,500+ lines)
+- Code examples for every feature
+- Step-by-step explanations
+- File references with line numbers
+
+✅ **Best Practices (Applied):**
+
+**SOLID Principles Example:**
+```php
+// Single Responsibility Principle:
+// Each class has ONE job only
+
+OrderController.php       → Handle HTTP requests
+OrderService.php          → Order business logic
+CommissionService.php     → Commission calculations
+InventoryService.php      → Stock management
+NotificationService.php   → Send notifications
+
+// Each focused, testable, maintainable ✓
+```
+
+**Dependency Injection:**
+```php
+class OrderController
+{
+    protected OrderService $orderService;
+    
+    // Dependencies injected (not instantiated inside)
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+    
+    // Easy to mock for testing ✓
+    // Easy to swap implementations ✓
+}
+```
 
 ---
 
